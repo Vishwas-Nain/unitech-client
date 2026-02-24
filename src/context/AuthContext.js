@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { loginUser, registerUser } from '../api/api';
+import api from '../api/api';
 
 const AuthContext = createContext();
 
@@ -13,16 +14,39 @@ export function AuthProvider({ children }) {
 
   // Check if user is logged in on initial load
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       try {
         const storedUser = localStorage.getItem('user');
         const token = localStorage.getItem('token');
         
         if (storedUser && token) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          setIsLoggedIn(true);
-          console.log('AuthContext - User authenticated on load:', userData.email);
+          // Validate token with server before setting user
+          try {
+            const response = await api.get('/api/users/verify-token', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data && response.data.valid) {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+              setIsLoggedIn(true);
+              console.log('AuthContext - User authenticated on load:', userData.email);
+            } else {
+              // Token is invalid, clear stored data
+              console.log('AuthContext - Invalid token, clearing stored data');
+              localStorage.removeItem('user');
+              localStorage.removeItem('token');
+              setUser(null);
+              setIsLoggedIn(false);
+            }
+          } catch (tokenError) {
+            // Token validation failed, clear stored data
+            console.log('AuthContext - Token validation failed, clearing stored data:', tokenError.response?.status);
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+            setIsLoggedIn(false);
+          }
         } else {
           console.log('AuthContext - No valid session found');
           setUser(null);

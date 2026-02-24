@@ -181,7 +181,13 @@ export const CartProvider = ({ children }) => {
     // If logged-in, sync cart from server but don't overwrite if local cart exists
     const syncFromServer = async () => {
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        // Clear cart if no token (user logged out)
+        setCartItems([]);
+        localStorage.removeItem('cartItems');
+        return;
+      }
+      
       try {
         const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
         if (res?.data?.cart?.items) {
@@ -200,6 +206,11 @@ export const CartProvider = ({ children }) => {
         }
       } catch (err) {
         console.warn('Could not load server cart on mount', err);
+        // If auth error, clear cart
+        if (err.response?.status === 401) {
+          setCartItems([]);
+          localStorage.removeItem('cartItems');
+        }
       }
     };
 
