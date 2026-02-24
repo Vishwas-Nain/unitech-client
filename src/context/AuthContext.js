@@ -143,6 +143,7 @@ export function AuthProvider({ children }) {
         message: err.message || 'Registration failed' 
       };
     } finally {
+      setLoading(false);
     }
   };
 
@@ -203,4 +204,17 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+export function useOtp() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useOtp must be used within an AuthProvider');
+  }
+  return {
+    requiresOtp: context.requiresOtp,
+    setRequiresOtp: context.setRequiresOtp,
+    otpUserId: context.otpUserId,
+    setOtpUserId: context.setOtpUserId
+  };
 }

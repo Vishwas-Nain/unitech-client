@@ -26,6 +26,7 @@ import {
   Phone as PhoneIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/UserContext';
+import { useOtp } from '../context/AuthContext';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -124,6 +125,7 @@ const LoginRegister = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { setRequiresOtp, setOtpUserId } = useOtp();
   const { 
     login, 
     register, 
@@ -221,7 +223,14 @@ const LoginRegister = () => {
         } else { // Register
           const result = await register(formData.name, formData.email, formData.password, formData.mobile);
           if (result.success) {
-            navigate('/');
+            if (result.requiresOtp) {
+              // Show OTP verification screen
+              setRequiresOtp(true);
+              setOtpUserId(result.userId);
+              setError('Please check your email for OTP verification');
+            } else {
+              navigate('/');
+            }
           } else {
             setError(result.message);
           }
@@ -309,17 +318,33 @@ const LoginRegister = () => {
                 }}
               >
                 <StyledTab label="Sign In" />
-                <StyledTab label="Sign Up" />
-              </Tabs>
-            </>
-          )}
 
-          {resetPasswordStep === 1 && (
-            <>
-              <StyledTypography
-                variant="h3"
-                component="h1"
-                gutterBottom
+      {resetPasswordStep === 1 && (
+        <>
+          <StyledTypography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            align="center"
+            sx={{
+              fontWeight: 700,
+              background: 'linear-gradient(45deg, #2563eb, #10b981)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Reset Password
+          </StyledTypography>
+          <StyledTypography
+            variant="h6"
+            align="center"
+            paragraph
+            sx={{ mt: 2 }}
+          >
+            Enter your mobile number to receive OTP
+          </StyledTypography>
+        </>
+      )}
                 align="center"
                 sx={{
                   fontWeight: 700,

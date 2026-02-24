@@ -19,16 +19,26 @@ export const CartProvider = ({ children }) => {
           quantity
         }, { headers: { Authorization: `Bearer ${token}` } });
 
-        // refresh server cart
-        const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
-        const serverItems = (res.data.cart.items || []).map(i => ({
-          id: i.product?._id || i.product || i.product?._id,
-          title: i.product?.name || i.product?.title || '',
-          price: i.price,
-          quantity: i.quantity
-        }));
-
-        setCartItems(serverItems);
+        // Don't refetch entire cart - update locally
+        const existingItem = cartItems.find(item => item.id === (product._id || product.id));
+        
+        if (existingItem) {
+          const newQuantity = existingItem.quantity + quantity;
+          setCartItems(prev => 
+            prev.map(item => 
+              item.id === (product._id || product.id) 
+                ? { ...item, quantity: newQuantity } 
+                : item
+            )
+          );
+        } else {
+          setCartItems(prev => [...prev, { 
+            id: product._id || product.id, 
+            title: product.name || product.title, 
+            price: product.price, 
+            quantity 
+          }]);
+        }
         updateTotalPrice();
         return;
       } catch (err) {
@@ -71,16 +81,9 @@ export const CartProvider = ({ children }) => {
     if (token) {
       // call server to remove; on failure revert
       api.delete(`/api/cart/items/${productId}`, { headers: { Authorization: `Bearer ${token}` } })
-        .then(async () => {
-          const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
-          const serverItems = (res.data.cart.items || []).map(i => ({
-            id: i.product?._id || i.product,
-            title: i.product?.name || i.product?.title || '',
-            price: i.price,
-            quantity: i.quantity
-          }));
-          setCartItems(serverItems);
-          setTotalPrice(serverItems.reduce((t, it) => t + (it.price * it.quantity), 0));
+        .then(() => {
+          // Don't refetch entire cart - trust the optimistic update
+          console.log('Item removed from server cart successfully');
         })
         .catch(err => {
           console.error('Failed to remove from server cart — reverting optimistic update', err);
@@ -110,16 +113,9 @@ export const CartProvider = ({ children }) => {
 
     if (token) {
       api.put(`/api/cart/items/${productId}`, { quantity: newQuantity }, { headers: { Authorization: `Bearer ${token}` } })
-        .then(async () => {
-          const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
-          const serverItems = (res.data.cart.items || []).map(i => ({
-            id: i.product?._id || i.product,
-            title: i.product?.name || i.product?.title || '',
-            price: i.price,
-            quantity: i.quantity
-          }));
-          setCartItems(serverItems);
-          setTotalPrice(serverItems.reduce((t, it) => t + (it.price * it.quantity), 0));
+        .then(() => {
+          // Don't refetch entire cart - trust the optimistic update
+          console.log('Item quantity updated on server successfully');
         })
         .catch(err => {
           console.error('Failed to update quantity on server — reverting optimistic update', err);
@@ -176,12 +172,13 @@ export const CartProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Load cart from localStorage
+    // Load cart from localStorage first
     const savedCart = localStorage.getItem('cartItems');
     if (savedCart) {
       setCartItems(JSON.parse(savedCart));
     }
-    // If logged-in, try to sync cart from server
+    
+    // If logged-in, sync cart from server but don't overwrite if local cart exists
     const syncFromServer = async () => {
       const token = getToken();
       if (!token) return;
@@ -189,12 +186,17 @@ export const CartProvider = ({ children }) => {
         const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
         if (res?.data?.cart?.items) {
           const serverItems = res.data.cart.items.map(i => ({
-            id: i.product?._id || i.product,
-            title: i.product?.name || i.product?.title || '',
+            id: i.product_id, // Use product_id for client-side operations
+            title: i.name || i.product?.name || i.product?.title || '',
             price: i.price,
             quantity: i.quantity
           }));
-          setCartItems(serverItems);
+          
+          // Only sync from server if local cart is empty (fresh login)
+          const localCart = localStorage.getItem('cartItems');
+          if (!localCart || JSON.parse(localCart).length === 0) {
+            setCartItems(serverItems);
+          }
         }
       } catch (err) {
         console.warn('Could not load server cart on mount', err);
