@@ -31,7 +31,9 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem
+  MenuItem,
+  Skeleton,
+  CircularProgress
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -50,6 +52,53 @@ import { getUserProfile, getUserOrders, updateUserProfile } from '../api/api';
 
 const drawerWidth = 240;
 
+// Skeleton Loading Component
+const OverviewSkeleton = () => (
+  <Grid container spacing={3}>
+    {[1, 2, 3, 4].map((item) => (
+      <Grid item xs={12} sm={6} md={3} key={item}>
+        <Card>
+          <CardContent>
+            <Skeleton variant="text" width="40%" />
+            <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
+          </CardContent>
+        </Card>
+      </Grid>
+    ))}
+    <Grid item xs={12}>
+      <Card>
+        <CardContent>
+          <Skeleton variant="text" width="20%" sx={{ mb: 2 }} />
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <TableRow key={item}>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="rectangular" width={80} height={24} /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    </Grid>
+  </Grid>
+);
+
 const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('overview');
@@ -67,7 +116,13 @@ const UserDashboard = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const profileResponse = await getUserProfile();
+      
+      // Make parallel API calls instead of sequential
+      const [profileResponse, ordersResponse] = await Promise.all([
+        getUserProfile(),
+        getUserOrders()
+      ]);
+      
       if (profileResponse.success) {
         setUserProfile(profileResponse.user);
         setEditForm({
@@ -77,7 +132,6 @@ const UserDashboard = () => {
         });
       }
 
-      const ordersResponse = await getUserOrders();
       if (ordersResponse.success) {
         setOrders(ordersResponse.orders || []);
       }
@@ -203,89 +257,95 @@ const UserDashboard = () => {
     </div>
   );
 
-  const renderOverview = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Welcome back!
-            </Typography>
-            <Typography variant="h4" color="primary">
-              {userProfile?.name}
-            </Typography>
-            <Typography color="textSecondary">
-              {userProfile?.email}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Orders
-            </Typography>
-            <Typography variant="h4">
-              {orders.length}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Account Status
-            </Typography>
-            <Chip 
-              label={userProfile?.isVerified ? 'Verified' : 'Not Verified'} 
-              color={userProfile?.isVerified ? 'success' : 'warning'} 
-            />
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Recent Orders
-            </Typography>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {orders.slice(0, 5).map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell>{order._id.slice(-8)}</TableCell>
-                      <TableCell>
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={order.status || 'Pending'} 
-                          color="primary" 
-                          size="small" 
-                        />
-                      </TableCell>
-                      <TableCell>${order.totalAmount || 0}</TableCell>
+  const renderOverview = () => {
+    if (loading && !userProfile) {
+      return <OverviewSkeleton />;
+    }
+    
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Welcome back!
+              </Typography>
+              <Typography variant="h4" color="primary">
+                {userProfile?.name}
+              </Typography>
+              <Typography color="textSecondary">
+                {userProfile?.email}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Orders
+              </Typography>
+              <Typography variant="h4">
+                {orders.length}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Account Status
+              </Typography>
+              <Chip 
+                label={userProfile?.isVerified ? 'Verified' : 'Not Verified'} 
+                color={userProfile?.isVerified ? 'success' : 'warning'} 
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Orders
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Order ID</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Total</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+                  </TableHead>
+                  <TableBody>
+                    {orders.slice(0, 5).map((order) => (
+                      <TableRow key={order._id}>
+                        <TableCell>{order._id.slice(-8)}</TableCell>
+                        <TableCell>
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={order.status || 'Pending'} 
+                            color="primary" 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>${order.totalAmount || 0}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
-    </Grid>
-  );
+    );
+  };
 
   const renderProfile = () => (
     <Grid container spacing={3}>

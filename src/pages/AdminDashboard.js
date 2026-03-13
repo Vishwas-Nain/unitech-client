@@ -35,7 +35,9 @@ import {
   InputLabel,
   Tabs,
   Tab,
-  Fab
+  Fab,
+  Skeleton,
+  CircularProgress
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -49,7 +51,9 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Visibility as ViewIcon
+  Visibility as ViewIcon,
+  Block as BlockIcon,
+  CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { 
   getAdminDashboard, 
@@ -59,10 +63,94 @@ import {
   createAdminProduct,
   updateAdminProduct,
   deleteAdminProduct,
-  updateOrderStatus
+  updateOrderStatus,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  toggleUserStatus
 } from '../api/api';
 
 const drawerWidth = 240;
+
+// Skeleton Loading Components
+const DashboardSkeleton = () => (
+  <Grid container spacing={3}>
+    {[1, 2, 3, 4].map((item) => (
+      <Grid item xs={12} sm={6} md={3} key={item}>
+        <Card>
+          <CardContent>
+            <Skeleton variant="text" width="40%" />
+            <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
+          </CardContent>
+        </Card>
+      </Grid>
+    ))}
+    <Grid item xs={12}>
+      <Card>
+        <CardContent>
+          <Skeleton variant="text" width="20%" sx={{ mb: 2 }} />
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                  <TableCell><Skeleton variant="text" /></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[1, 2, 3, 4, 5].map((item) => (
+                  <TableRow key={item}>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="rectangular" width={80} height={24} /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                    <TableCell><Skeleton variant="text" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    </Grid>
+  </Grid>
+);
+
+const TableSkeleton = ({ rows = 5, columns = 6 }) => (
+  <Card>
+    <CardContent>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {Array(columns).fill(0).map((_, index) => (
+                <TableCell key={index}>
+                  <Skeleton variant="text" />
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array(rows).fill(0).map((_, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {Array(columns).fill(0).map((_, colIndex) => (
+                  <TableCell key={colIndex}>
+                    <Skeleton variant="text" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </CardContent>
+  </Card>
+);
 
 const AdminDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -156,18 +244,20 @@ const AdminDashboard = () => {
 
   const handleSectionChange = (section) => {
     setSelectedSection(section);
+    
+    // Only fetch data when needed (lazy loading)
     switch (section) {
       case 'users':
-        fetchUsers();
+        if (users.length === 0) fetchUsers();
         break;
       case 'orders':
-        fetchOrders();
+        if (orders.length === 0) fetchOrders();
         break;
       case 'products':
-        fetchProducts();
+        if (products.length === 0) fetchProducts();
         break;
       default:
-        fetchDashboardData();
+        if (!dashboardData) fetchDashboardData();
     }
   };
 
@@ -180,6 +270,56 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Failed to create product:', error);
+    }
+  };
+
+  // User Management Handlers
+  const handleCreateUser = async () => {
+    try {
+      const response = await createAdminUser(editForm);
+      if (response.success) {
+        setDialogOpen(false);
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to create user:', error);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      const { id, ...userData } = editForm;
+      const response = await updateAdminUser(id, userData);
+      if (response.success) {
+        setDialogOpen(false);
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const response = await deleteAdminUser(userId);
+        if (response.success) {
+          fetchUsers();
+        }
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
+    }
+  };
+
+  const handleToggleUserStatus = async (userId) => {
+    try {
+      const response = await toggleUserStatus(userId);
+      if (response.success) {
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error('Failed to toggle user status:', error);
     }
   };
 
@@ -266,90 +406,164 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const renderDashboard = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Users
-            </Typography>
-            <Typography variant="h4">
-              {dashboardData?.stats?.totalUsers || 0}
-            </Typography>
-          </CardContent>
-        </Card>
+  const renderDashboard = () => {
+    if (loading && !dashboardData) {
+      return <DashboardSkeleton />;
+    }
+    
+    return (
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Users
+              </Typography>
+              <Typography variant="h4">
+                {dashboardData?.stats?.totalUsers || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Orders
+              </Typography>
+              <Typography variant="h4">
+                {dashboardData?.stats?.totalOrders || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Products
+              </Typography>
+              <Typography variant="h4">
+                {dashboardData?.stats?.totalProducts || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Revenue
+              </Typography>
+              <Typography variant="h4">
+                ${dashboardData?.stats?.totalRevenue || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Orders
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Order ID</TableCell>
+                      <TableCell>Customer</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Total</TableCell>
+                      <TableCell>Date</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {dashboardData?.recentOrders?.map((order) => (
+                      <TableRow key={order._id}>
+                        <TableCell>{order._id.slice(-8)}</TableCell>
+                        <TableCell>{order.user?.name || 'N/A'}</TableCell>
+                        <TableCell>{order.user?.email || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={order.status || 'Pending'} 
+                            color="primary" 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>${order.totalAmount || 0}</TableCell>
+                        <TableCell>
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+    );
+  };
+
+  const renderProducts = () => {
+    if (loading && products.length === 0) {
+      return <TableSkeleton rows={5} columns={6} />;
+    }
+    
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h6">Product Management</Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setDialogType('product');
+              setEditForm({ name: '', price: '', category: '', stock: '', description: '' });
+              setDialogOpen(true);
+            }}
+          >
+            Add Product
+          </Button>
+        </Box>
         <Card>
           <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Orders
-            </Typography>
-            <Typography variant="h4">
-              {dashboardData?.stats?.totalOrders || 0}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Products
-            </Typography>
-            <Typography variant="h4">
-              {dashboardData?.stats?.totalProducts || 0}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Typography color="textSecondary" gutterBottom>
-              Total Revenue
-            </Typography>
-            <Typography variant="h4">
-              ${dashboardData?.stats?.totalRevenue || 0}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Recent Orders
-            </Typography>
             <TableContainer>
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Order ID</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Email</TableCell>
+                    <TableCell>Product Name</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Price</TableCell>
+                    <TableCell>Stock</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Date</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {dashboardData?.recentOrders?.map((order) => (
-                    <TableRow key={order._id}>
-                      <TableCell>{order._id.slice(-8)}</TableCell>
-                      <TableCell>{order.user?.name || 'N/A'}</TableCell>
-                      <TableCell>{order.user?.email || 'N/A'}</TableCell>
+                  {products.map((product) => (
+                    <TableRow key={product._id}>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.category}</TableCell>
+                      <TableCell>${product.price}</TableCell>
+                      <TableCell>{product.stock}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={order.status || 'Pending'} 
-                          color="primary" 
+                          label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+                          color={product.stock > 0 ? 'success' : 'error'} 
                           size="small" 
                         />
                       </TableCell>
-                      <TableCell>${order.totalAmount || 0}</TableCell>
                       <TableCell>
-                        {new Date(order.createdAt).toLocaleDateString()}
+                        <IconButton size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton size="small" color="error">
+                          <DeleteIcon />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -358,71 +572,9 @@ const AdminDashboard = () => {
             </TableContainer>
           </CardContent>
         </Card>
-      </Grid>
-    </Grid>
-  );
-
-  const renderProducts = () => (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h6">Product Management</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setDialogType('product');
-            setEditForm({ name: '', price: '', category: '', stock: '', description: '' });
-            setDialogOpen(true);
-          }}
-        >
-          Add Product
-        </Button>
       </Box>
-      <Card>
-        <CardContent>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Product Name</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Price</TableCell>
-                  <TableCell>Stock</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product._id}>
-                    <TableCell>{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>${product.price}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
-                        color={product.stock > 0 ? 'success' : 'error'} 
-                        size="small" 
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton size="small">
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton size="small" color="error">
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
-    </Box>
-  );
+    );
+  };
 
   const renderOrders = () => (
     <Card>
@@ -481,56 +633,118 @@ const AdminDashboard = () => {
     </Card>
   );
 
-  const renderUsers = () => (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          User Management
-        </Typography>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Mobile</TableCell>
-                <TableCell>Verified</TableCell>
-                <TableCell>Registered Date</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.mobile}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={user.isVerified ? 'Verified' : 'Not Verified'} 
-                      color={user.isVerified ? 'success' : 'warning'} 
-                      size="small" 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small">
-                      <ViewIcon />
-                    </IconButton>
-                    <IconButton size="small" color="error">
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
-    </Card>
-  );
+  const renderUsers = () => {
+    if (loading && users.length === 0) {
+      return <TableSkeleton rows={5} columns={6} />;
+    }
+    
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h6">User Management</Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setDialogType('user');
+              setEditForm({ 
+                name: '', 
+                email: '', 
+                mobile: '', 
+                password: '', 
+                role: 'user',
+                is_verified: true 
+              });
+              setDialogOpen(true);
+            }}
+          >
+            Add User
+          </Button>
+        </Box>
+        <Card>
+          <CardContent>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Mobile</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Registered Date</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.mobile}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={user.role || 'user'} 
+                          color={user.role === 'admin' ? 'secondary' : 'primary'} 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={user.is_verified ? 'Active' : 'Inactive'} 
+                          color={user.is_verified ? 'success' : 'error'} 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            setDialogType('edit-user');
+                            setEditForm({
+                              id: user.id,
+                              name: user.name,
+                              email: user.email,
+                              mobile: user.mobile,
+                              role: user.role || 'user',
+                              is_verified: user.is_verified
+                            });
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          color="warning"
+                          onClick={() => handleToggleUserStatus(user.id)}
+                          title={user.is_verified ? 'Deactivate User' : 'Activate User'}
+                        >
+                          {user.is_verified ? <BlockIcon /> : <CheckCircleIcon />}
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={user.role === 'admin'}
+                          title="Delete User"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  };
 
   const renderCategories = () => (
     <Card>
@@ -721,6 +935,129 @@ const AdminDashboard = () => {
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleCreateProduct} variant="contained">Add Product</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={dialogOpen && dialogType === 'user'} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New User</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Name"
+            fullWidth
+            variant="outlined"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Email"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Mobile"
+            fullWidth
+            variant="outlined"
+            value={editForm.mobile}
+            onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={editForm.password}
+            onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={editForm.role}
+              onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+              label="Role"
+            >
+              <MenuItem value="user">User</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateUser} variant="contained">Add User</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={dialogOpen && dialogType === 'edit-user'} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit User</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Name"
+            fullWidth
+            variant="outlined"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Email"
+            type="email"
+            fullWidth
+            variant="outlined"
+            value={editForm.email}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Mobile"
+            fullWidth
+            variant="outlined"
+            value={editForm.mobile}
+            onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Role</InputLabel>
+            <Select
+              value={editForm.role}
+              onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+              label="Role"
+            >
+              <MenuItem value="user">User</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={editForm.is_verified}
+              onChange={(e) => setEditForm({ ...editForm, is_verified: e.target.value })}
+              label="Status"
+            >
+              <MenuItem value={true}>Active</MenuItem>
+              <MenuItem value={false}>Inactive</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleUpdateUser} variant="contained">Update User</Button>
         </DialogActions>
       </Dialog>
     </Box>
