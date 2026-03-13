@@ -112,7 +112,13 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
               
               <ListItem
                 button
-                onClick={() => handleNavigation('/dashboard')}
+                onClick={() => {
+                  if (currentUser?.role === 'admin') {
+                    handleNavigation('/admin/dashboard');
+                  } else {
+                    handleNavigation('/user/dashboard');
+                  }
+                }}
               >
                 <ListItemIcon>
                   <DashboardIcon />

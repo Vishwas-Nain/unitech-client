@@ -17,6 +17,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
+import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
@@ -93,6 +94,16 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* User Dashboard */}
+          <Route 
+            path="/user/dashboard" 
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
               </ProtectedRoute>
             } 
           />

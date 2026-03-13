@@ -22,17 +22,45 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip
+  Chip,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Tabs,
+  Tab,
+  Fab
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   ShoppingCart as OrdersIcon,
   People as UsersIcon,
   Inventory as ProductsIcon,
+  Category as CategoriesIcon,
+  Analytics as AnalyticsIcon,
   Menu as MenuIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Visibility as ViewIcon
 } from '@mui/icons-material';
-import { getAdminDashboard, getAdminUsers } from '../api/api';
+import { 
+  getAdminDashboard, 
+  getAdminUsers, 
+  getAdminOrders,
+  getAdminProducts,
+  createAdminProduct,
+  updateAdminProduct,
+  deleteAdminProduct,
+  updateOrderStatus
+} from '../api/api';
 
 const drawerWidth = 240;
 
@@ -41,7 +69,12 @@ const AdminDashboard = () => {
   const [selectedSection, setSelectedSection] = useState('dashboard');
   const [dashboardData, setDashboardData] = useState(null);
   const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState('');
+  const [editForm, setEditForm] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -83,6 +116,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await getAdminOrders();
+      if (response.success) {
+        setOrders(response.orders || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await getAdminProducts();
+      if (response.success) {
+        setProducts(response.products || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
@@ -95,8 +156,41 @@ const AdminDashboard = () => {
 
   const handleSectionChange = (section) => {
     setSelectedSection(section);
-    if (section === 'users') {
-      fetchUsers();
+    switch (section) {
+      case 'users':
+        fetchUsers();
+        break;
+      case 'orders':
+        fetchOrders();
+        break;
+      case 'products':
+        fetchProducts();
+        break;
+      default:
+        fetchDashboardData();
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    try {
+      const response = await createAdminProduct(editForm);
+      if (response.success) {
+        setDialogOpen(false);
+        fetchProducts();
+      }
+    } catch (error) {
+      console.error('Failed to create product:', error);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      const response = await updateOrderStatus(orderId, { status });
+      if (response.success) {
+        fetchOrders();
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
     }
   };
 
@@ -148,6 +242,26 @@ const AdminDashboard = () => {
           </ListItemIcon>
           <ListItemText primary="Users" />
         </ListItem>
+        <ListItem 
+          button 
+          selected={selectedSection === 'categories'}
+          onClick={() => handleSectionChange('categories')}
+        >
+          <ListItemIcon>
+            <CategoriesIcon />
+          </ListItemIcon>
+          <ListItemText primary="Categories" />
+        </ListItem>
+        <ListItem 
+          button 
+          selected={selectedSection === 'analytics'}
+          onClick={() => handleSectionChange('analytics')}
+        >
+          <ListItemIcon>
+            <AnalyticsIcon />
+          </ListItemIcon>
+          <ListItemText primary="Analytics" />
+        </ListItem>
       </List>
     </div>
   );
@@ -190,6 +304,18 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Total Revenue
+            </Typography>
+            <Typography variant="h4">
+              ${dashboardData?.stats?.totalRevenue || 0}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
       <Grid item xs={12}>
         <Card>
           <CardContent>
@@ -204,6 +330,7 @@ const AdminDashboard = () => {
                     <TableCell>Customer</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
                     <TableCell>Date</TableCell>
                   </TableRow>
                 </TableHead>
@@ -220,6 +347,7 @@ const AdminDashboard = () => {
                           size="small" 
                         />
                       </TableCell>
+                      <TableCell>${order.totalAmount || 0}</TableCell>
                       <TableCell>
                         {new Date(order.createdAt).toLocaleDateString()}
                       </TableCell>
@@ -234,11 +362,130 @@ const AdminDashboard = () => {
     </Grid>
   );
 
+  const renderProducts = () => (
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h6">Product Management</Typography>
+        <Button 
+          variant="contained" 
+          startIcon={<AddIcon />}
+          onClick={() => {
+            setDialogType('product');
+            setEditForm({ name: '', price: '', category: '', stock: '', description: '' });
+            setDialogOpen(true);
+          }}
+        >
+          Add Product
+        </Button>
+      </Box>
+      <Card>
+        <CardContent>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Product Name</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Price</TableCell>
+                  <TableCell>Stock</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {products.map((product) => (
+                  <TableRow key={product._id}>
+                    <TableCell>{product.name}</TableCell>
+                    <TableCell>{product.category}</TableCell>
+                    <TableCell>${product.price}</TableCell>
+                    <TableCell>{product.stock}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+                        color={product.stock > 0 ? 'success' : 'error'} 
+                        size="small" 
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton size="small">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+
+  const renderOrders = () => (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Order Management
+        </Typography>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Order ID</TableCell>
+                <TableCell>Customer</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Total</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders.map((order) => (
+                <TableRow key={order._id}>
+                  <TableCell>{order._id.slice(-8)}</TableCell>
+                  <TableCell>{order.user?.name || 'N/A'}</TableCell>
+                  <TableCell>{order.user?.email || 'N/A'}</TableCell>
+                  <TableCell>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                      <Select
+                        value={order.status || 'pending'}
+                        onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                      >
+                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="processing">Processing</MenuItem>
+                        <MenuItem value="shipped">Shipped</MenuItem>
+                        <MenuItem value="delivered">Delivered</MenuItem>
+                        <MenuItem value="cancelled">Cancelled</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>${order.totalAmount || 0}</TableCell>
+                  <TableCell>
+                    {new Date(order.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton size="small">
+                      <ViewIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
+  );
+
   const renderUsers = () => (
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Registered Users
+          User Management
         </Typography>
         <TableContainer>
           <Table>
@@ -249,6 +496,7 @@ const AdminDashboard = () => {
                 <TableCell>Mobile</TableCell>
                 <TableCell>Verified</TableCell>
                 <TableCell>Registered Date</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -260,12 +508,20 @@ const AdminDashboard = () => {
                   <TableCell>
                     <Chip 
                       label={user.isVerified ? 'Verified' : 'Not Verified'} 
-                      color={user.isVerified ? 'success' : 'default'} 
+                      color={user.isVerified ? 'success' : 'warning'} 
                       size="small" 
                     />
                   </TableCell>
                   <TableCell>
                     {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <IconButton size="small">
+                      <ViewIcon />
+                    </IconButton>
+                    <IconButton size="small" color="error">
+                      <DeleteIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -276,32 +532,62 @@ const AdminDashboard = () => {
     </Card>
   );
 
+  const renderCategories = () => (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Category Management
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          Category management features coming soon...
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+
+  const renderAnalytics = () => (
+    <Grid container spacing={3}>
+      <Grid item xs={12} md={8}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Sales Analytics
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Analytics charts and graphs coming soon...
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Top Selling Products
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              Product analytics coming soon...
+            </Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
+  );
+
   const renderContent = () => {
     switch (selectedSection) {
       case 'dashboard':
         return renderDashboard();
+      case 'products':
+        return renderProducts();
+      case 'orders':
+        return renderOrders();
       case 'users':
         return renderUsers();
-      case 'products':
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6">
-                Products Management (Coming Soon)
-              </Typography>
-            </CardContent>
-          </Card>
-        );
-      case 'orders':
-        return (
-          <Card>
-            <CardContent>
-              <Typography variant="h6">
-                Orders Management (Coming Soon)
-              </Typography>
-            </CardContent>
-          </Card>
-        );
+      case 'categories':
+        return renderCategories();
+      case 'analytics':
+        return renderAnalytics();
       default:
         return renderDashboard();
     }
@@ -377,6 +663,66 @@ const AdminDashboard = () => {
           {renderContent()}
         </Container>
       </Box>
+
+      {/* Add Product Dialog */}
+      <Dialog open={dialogOpen && dialogType === 'product'} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Product</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Product Name"
+            fullWidth
+            variant="outlined"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Price"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={editForm.price}
+            onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Category"
+            fullWidth
+            variant="outlined"
+            value={editForm.category}
+            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Stock"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={editForm.stock}
+            onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            margin="dense"
+            label="Description"
+            fullWidth
+            multiline
+            rows={3}
+            variant="outlined"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateProduct} variant="contained">Add Product</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
