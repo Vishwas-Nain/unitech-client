@@ -225,3 +225,202 @@ export async function getUserOrders() {
     };
   }
 }
+
+export const updateUserProfile = async (data) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.put('/api/users/profile', data, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to update profile.' 
+    };
+  }
+};
+
+export const getAdminOrders = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.get('/api/admin/orders', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to fetch orders.' 
+    };
+  }
+};
+
+export const getAdminProducts = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.get('/api/admin/products', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to fetch products.' 
+    };
+  }
+};
+
+export const createAdminProduct = async (productData) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/admin/products', productData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to create product.' 
+    };
+  }
+};
+
+export const updateAdminProduct = async (productId, productData) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.put(`/api/admin/products/${productId}`, productData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to update product.' 
+    };
+  }
+};
+
+export const deleteAdminProduct = async (productId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.delete(`/api/admin/products/${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to delete product.' 
+    };
+  }
+};
+
+export const updateOrderStatus = async (orderId, status) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.put(`/api/admin/orders/${orderId}`, { status }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to update order status.' 
+    };
+  }
+};
+
+// Admin User Management APIs
+export const createAdminUser = async (userData) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/admin/users', userData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to create user.' 
+    };
+  }
+};
+
+export const updateAdminUser = async (userId, userData) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.put(`/api/admin/users/${userId}`, userData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to update user.' 
+    };
+  }
+};
+
+export const deleteAdminUser = async (userId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.delete(`/api/admin/users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to delete user.' 
+    };
+  }
+};
+
+export const toggleUserStatus = async (userId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.put(`/api/admin/users/${userId}/toggle-status`, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to toggle user status.' 
+    };
+  }
+};
