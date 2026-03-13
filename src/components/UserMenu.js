@@ -8,6 +8,7 @@ import {
   Divider,
   Avatar,
   IconButton,
+  ListItem,
   ListItemIcon,
   ListItemText,
   Button,
@@ -22,12 +23,15 @@ import {
 import {
   Person,
   PersonOutline,
+  Person as PersonIcon,
   Settings,
-  Logout,
+  Logout as LogoutIcon,
   Dashboard as DashboardIcon,
   AdminPanelSettings as AdminIcon,
   Refresh as RefreshIcon,
-  Receipt as ReceiptIcon
+  Receipt as ReceiptIcon,
+  Favorite as FavoriteIcon,
+  Login as LoginIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
