@@ -22,7 +22,8 @@ import {
   Favorite as FavoriteIcon,
   ExitToApp as LogoutIcon,
   Login as LoginIcon,
-  Person as UserIcon
+  Person as UserIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
 
 const UserMenu = ({ user, isLoggedIn, logout }) => {
@@ -42,6 +43,14 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
     handleUserClose();
     navigate(path, { state: { from: 'navbar' } });
   };
+
+  // Get user from localStorage to check role
+  const getUser = () => {
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData) : null;
+  };
+
+  const currentUser = getUser();
   return (
     <>
       <IconButton
@@ -110,6 +119,19 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
                 </ListItemIcon>
                 <ListItemText primary="Dashboard" />
               </ListItem>
+
+              {/* Admin Panel - Only show for admin users */}
+              {currentUser?.role === 'admin' && (
+                <ListItem
+                  button
+                  onClick={() => handleNavigation('/admin/dashboard')}
+                >
+                  <ListItemIcon>
+                    <AdminIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Admin Panel" />
+                </ListItem>
+              )}
 
               <ListItem
                 button

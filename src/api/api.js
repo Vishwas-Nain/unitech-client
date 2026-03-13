@@ -138,3 +138,53 @@ export async function loginUser(data) {
     };
   }
 }
+
+// Admin API functions
+export async function createAdmin(data) {
+  try {
+    const response = await api.post('/api/admin/create', data);
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to create admin account.' 
+    };
+  }
+}
+
+export async function getAdminDashboard() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.get('/api/admin/dashboard', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to fetch dashboard data.' 
+    };
+  }
+}
+
+export async function getAdminUsers(page = 1, limit = 10) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.get(`/api/admin/users?page=${page}&limit=${limit}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to fetch users.' 
+    };
+  }
+}

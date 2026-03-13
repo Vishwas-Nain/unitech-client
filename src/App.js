@@ -17,12 +17,14 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
+import AdminDashboard from './pages/AdminDashboard';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import { CartProvider } from './context/CartContext';
 import { UserProvider } from './context/UserContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 const AppRoutes = () => {
   return (
@@ -92,6 +94,16 @@ const AppRoutes = () => {
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin Routes */}
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
             } 
           />
           
