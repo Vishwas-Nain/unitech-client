@@ -30,22 +30,10 @@ const Login = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showOtpField, setShowOtpField] = useState(() => {
-    // Try to get userId from localStorage on initial load
-    const storedUserId = localStorage.getItem('otp_user_id');
-    return storedUserId ? true : false;
-  });
-  const [otpSent, setOtpSent] = useState(() => {
-    // Try to get userId from localStorage on initial load
-    const storedUserId = localStorage.getItem('otp_user_id');
-    return storedUserId ? true : false;
-  });
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [otpCountdown, setOtpCountdown] = useState(0);
-  const [userId, setUserId] = useState(() => {
-    // Try to get userId from localStorage on initial load
-    const storedUserId = localStorage.getItem('otp_user_id');
-    return storedUserId ? storedUserId : null;
-  });
+  const [userId, setUserId] = useState(null);
   
   // Check for registration success state
   useEffect(() => {
@@ -74,75 +62,78 @@ const Login = () => {
 
   const { login } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSendOtp = async () => {
+    if (!formData.email || !formData.password) {
+      setError('Please enter email and password first');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      console.log('Login - Attempting login with data:', {
+      console.log('Login - Sending OTP for:', formData.email);
+
+      const response = await loginUser({
         email: formData.email,
-        hasOtp: !!formData.otp,
-        userId: userId || 'none'
+        password: formData.password,
+        sendOtp: true
       });
+      
+      console.log('Login - Send OTP response:', response);
 
-      // Call the login function from AuthContext
-      const result = await login(
-        formData.email, 
-        formData.password,
-        formData.otp || undefined, // Only send OTP if it exists
-        userId || undefined         // Only send userId if it exists
-      );
-
-      console.log('Login - Login result:', result);
-
-      // Handle OTP required case
-      if (result.requiresOtp) {
-        console.log('Login - OTP required, userId:', result.userId);
-        // Store the userId in localStorage to persist across page refreshes
-        if (result.userId) {
-          localStorage.setItem('otp_user_id', result.userId);
-        }
-        
-        // Update state to show OTP field
+      if (response.requiresOtp) {
+        console.log('Login - OTP sent, userId:', response.userId);
+        setUserId(response.userId);
         setShowOtpField(true);
         setOtpSent(true);
         setOtpCountdown(60);
-        setUserId(prevUserId => result.userId || prevUserId);
-        setSuccess('OTP has been sent to your registered mobile number');
-        setFormData(prev => ({ ...prev, otp: '' })); // Clear OTP field
-        setLoading(false);
-        return;
+        setSuccess('OTP has been sent to your email address');
+        setFormData(prev => ({ ...prev, otp: '' }));
+      } else if (response.error) {
+        throw new Error(response.error);
       }
+    } catch (err) {
+      console.error('Send OTP error:', err);
+      setError(err.message || 'Failed to send OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // If there was an error
-      if (result.error) {
-        throw new Error(result.error);
-      }
+  const handleVerifyOtp = async () => {
+    if (!formData.otp) {
+      setError('Please enter the OTP');
+      return;
+    }
 
-      // If login was successful
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      console.log('Login - Verifying OTP for:', formData.email);
+
+      const result = await login(
+        formData.email, 
+        formData.password,
+        formData.otp,
+        userId
+      );
+
+      console.log('Login - Verification result:', result);
+
       if (result.success) {
         console.log('Login - Successful, navigating to home');
         const from = location.state?.from?.pathname || '/';
         navigate(from, { replace: true });
-        return;
+      } else if (result.error) {
+        throw new Error(result.error);
       }
-
-      // If we get here, something unexpected happened
-      console.error('Login - Unexpected response format:', result);
-      throw new Error('Unexpected response from server');
     } catch (err) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.message || 
-                         err.message || 
-                         (otpSent ? 'Verification failed' : 'Login failed') + '. Please try again.';
-      setError(errorMessage);
-      
-      // If OTP was sent but verification failed, keep the OTP field visible
-      if (otpSent) {
-        setShowOtpField(true);
-      }
+      console.error('OTP verification error:', err);
+      setError(err.message || 'OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -163,7 +154,7 @@ const Login = () => {
       
       if (response.requiresOtp) {
         setOtpCountdown(60);
-        setSuccess('New OTP sent to your mobile number');
+        setSuccess('New OTP sent to your email address');
       }
     } catch (err) {
       setError('Failed to resend OTP. Please try again.');
@@ -199,7 +190,7 @@ const Login = () => {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box component="form" sx={{ mt: 1 }}>
             <TextField 
               margin="normal"
               required
@@ -241,6 +232,32 @@ const Login = () => {
               }}
             />
 
+            {/* Send OTP Button - Only show before OTP is sent */}
+            {!otpSent && (
+              <Button
+                type="button"
+                fullWidth
+                variant="contained"
+                sx={{ 
+                  mt: 3, 
+                  mb: 2, 
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'primary.dark'
+                  }
+                }}
+                disabled={loading || !formData.email || !formData.password}
+                onClick={handleSendOtp}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Send OTP'
+                )}
+              </Button>
+            )}
+
+            {/* OTP Field and Verify Button - Only show after OTP is sent */}
             {showOtpField && (
               <Box sx={{ mt: 2, mb: 2 }}>
                 <TextField
@@ -259,46 +276,34 @@ const Login = () => {
                     startAdornment: <Sms color="action" sx={{ mr: 1 }} />,
                   }}
                 />
-                <Box sx={{ textAlign: 'right', mt: 1 }}>
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                  <Button
+                    onClick={handleVerifyOtp}
+                    disabled={loading || !formData.otp}
+                    variant="contained"
+                    sx={{ flex: 1 }}
+                  >
+                    {loading ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      'Verify OTP'
+                    )}
+                  </Button>
                   <Button
                     onClick={handleResendOtp}
                     disabled={otpCountdown > 0 || loading}
                     size="small"
                     color="primary"
+                    variant="outlined"
                   >
                     {otpCountdown > 0 
-                      ? `Resend OTP in ${otpCountdown}s` 
-                      : 'Resend OTP'}
+                      ? `Resend ${otpCountdown}s` 
+                      : 'Resend'}
                   </Button>
                 </Box>
               </Box>
             )}
             
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ 
-                mt: 3, 
-                mb: 2, 
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: 'primary.dark'
-                }
-              }}
-              disabled={loading || 
-                (otpSent && !formData.otp) || 
-                (!otpSent && (!formData.email || !formData.password))}
-            >
-              {loading ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : otpSent ? (
-                'Verify OTP'
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-
             <Divider sx={{ my: 2 }} />
 
             <Button
