@@ -533,7 +533,7 @@ const AdminDashboard = () => {
             startIcon={<AddIcon />}
             onClick={() => {
               setDialogType('product');
-              setEditForm({ name: '', price: '', category: 'laptop', stock: '', description: '' });
+              setEditForm({ name: '', price: '', category: 'laptop', brand: '', stock: '', description: '' });
               setDialogOpen(true);
             }}
           >
@@ -561,6 +561,7 @@ const AdminDashboard = () => {
                   <TableHead>
                     <TableRow>
                       <TableCell>Product Name</TableCell>
+                      <TableCell>Brand</TableCell>
                       <TableCell>Price</TableCell>
                       <TableCell>Stock</TableCell>
                       <TableCell>Status</TableCell>
@@ -571,6 +572,7 @@ const AdminDashboard = () => {
                     {categoryProducts.map((product) => (
                       <TableRow key={product.id || product._id}>
                         <TableCell>{product.name}</TableCell>
+                        <TableCell>{product.brand || 'N/A'}</TableCell>
                         <TableCell>${product.price}</TableCell>
                         <TableCell>{product.stock}</TableCell>
                         <TableCell>
@@ -939,6 +941,15 @@ const AdminDashboard = () => {
               <MenuItem value="accessories">🎧 Accessories</MenuItem>
             </Select>
           </FormControl>
+          <TextField
+            margin="dense"
+            label="Brand"
+            fullWidth
+            variant="outlined"
+            value={editForm.brand || ''}
+            onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+            sx={{ mb: 2 }}
+          />
           <TextField
             margin="dense"
             label="Stock"
