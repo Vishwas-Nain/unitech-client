@@ -121,10 +121,26 @@ export function AuthProvider({ children }) {
       // If login is successful
       if (response.token) {
         console.log('AuthContext - Login successful, setting user data');
+        
+        // Check if stored user data exists and has different role
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const storedUserData = JSON.parse(storedUser);
+          if (storedUserData.email === response.user.email && 
+              storedUserData.role !== response.user.role) {
+            console.log('AuthContext - Role changed detected, updating user data');
+            // Clear old data and set new data
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+          }
+        }
+        
         setUser(response.user);
         setIsLoggedIn(true);
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
+        
+        console.log('AuthContext - User logged in with role:', response.user.role);
         return { 
           success: true, 
           user: response.user,

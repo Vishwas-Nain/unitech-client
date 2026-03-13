@@ -1,35 +1,44 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import {
-  IconButton,
-  Popover,
-  Paper,
+  Menu,
+  MenuItem,
   Typography,
-  Divider,
-  Button,
-  Avatar,
   Box,
-  useTheme,
-  ListItem,
+  Divider,
+  Avatar,
+  IconButton,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
+  Popover,
+  Paper
 } from '@mui/material';
 import {
-  Person as PersonIcon,
-  PersonOutline as PersonOutlineIcon,
+  Person,
+  PersonOutline,
+  Settings,
+  Logout,
   Dashboard as DashboardIcon,
-  Receipt as ReceiptIcon,
-  Favorite as FavoriteIcon,
-  ExitToApp as LogoutIcon,
-  Login as LoginIcon,
-  Person as UserIcon,
-  AdminPanelSettings as AdminIcon
+  AdminPanelSettings as AdminIcon,
+  Refresh as RefreshIcon,
+  Receipt as ReceiptIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { getUserProfile } from '../api/api';
 
 const UserMenu = ({ user, isLoggedIn, logout }) => {
   const [userAnchor, setUserAnchor] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const theme = useTheme();
   const navigate = useNavigate();
+  const { updateUser } = useAuth();
 
   const handleUserClick = (event) => {
     setUserAnchor(event.currentTarget);
@@ -42,6 +51,27 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
   const handleNavigation = (path) => {
     handleUserClose();
     navigate(path, { state: { from: 'navbar' } });
+  };
+
+  const handleRefreshRole = async () => {
+    setRefreshing(true);
+    try {
+      const response = await getUserProfile();
+      if (response.success) {
+        // Update user data in AuthContext
+        const updateResult = updateUser(response.user);
+        if (updateResult.success) {
+          console.log('User role refreshed successfully');
+          // Force page reload to update UI
+          window.location.reload();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh user role:', error);
+    } finally {
+      setRefreshing(false);
+      handleUserClose();
+    }
   };
 
   // Get user from localStorage to check role
@@ -71,7 +101,7 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
           />
         ) : (
           <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
-            {user?.name?.charAt(0)?.toUpperCase() || <PersonOutlineIcon />}
+            {user?.name?.charAt(0)?.toUpperCase() || <PersonOutline />}
           </Avatar>
         )}
       </IconButton>
@@ -138,6 +168,22 @@ const UserMenu = ({ user, isLoggedIn, logout }) => {
                   <ListItemText primary="Admin Panel" />
                 </ListItem>
               )}
+
+              {/* Refresh Role - Show if role might have changed */}
+              <ListItem
+                button
+                onClick={handleRefreshRole}
+                disabled={refreshing}
+              >
+                <ListItemIcon>
+                  {refreshing ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <RefreshIcon />
+                  )}
+                </ListItemIcon>
+                <ListItemText primary={refreshing ? "Refreshing..." : "Refresh Role"} />
+              </ListItem>
 
               <ListItem
                 button
