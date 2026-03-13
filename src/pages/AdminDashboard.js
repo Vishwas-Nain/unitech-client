@@ -266,6 +266,7 @@ const AdminDashboard = () => {
       const response = await createAdminProduct(editForm);
       if (response.success) {
         setDialogOpen(false);
+        // Refresh products to show the new product in its category
         fetchProducts();
       }
     } catch (error) {
@@ -513,6 +514,16 @@ const AdminDashboard = () => {
       return <TableSkeleton rows={5} columns={6} />;
     }
     
+    // Group products by category
+    const groupedProducts = products.reduce((acc, product) => {
+      const category = product.category || 'uncategorized';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(product);
+      return acc;
+    }, {});
+
     return (
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -522,56 +533,69 @@ const AdminDashboard = () => {
             startIcon={<AddIcon />}
             onClick={() => {
               setDialogType('product');
-              setEditForm({ name: '', price: '', category: '', stock: '', description: '' });
+              setEditForm({ name: '', price: '', category: 'laptop', stock: '', description: '' });
               setDialogOpen(true);
             }}
           >
             Add Product
           </Button>
         </Box>
-        <Card>
-          <CardContent>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Product Name</TableCell>
-                    <TableCell>Category</TableCell>
-                    <TableCell>Price</TableCell>
-                    <TableCell>Stock</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product._id}>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>${product.price}</TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
-                          color={product.stock > 0 ? 'success' : 'error'} 
-                          size="small" 
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small">
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton size="small" color="error">
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
+        
+        {/* Category Sections */}
+        {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
+          <Card key={category} sx={{ mb: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ textTransform: 'capitalize', flexGrow: 1 }}>
+                  {category === 'laptop' && '💻'} {category === 'desktop' && '🖥️'} {category === 'accessories' && '🎧'} {category} ({categoryProducts.length})
+                </Typography>
+                <Chip 
+                  label={categoryProducts.length} 
+                  color="primary" 
+                  size="small" 
+                  sx={{ ml: 1 }}
+                />
+              </Box>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Product Name</TableCell>
+                      <TableCell>Price</TableCell>
+                      <TableCell>Stock</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
+                  </TableHead>
+                  <TableBody>
+                    {categoryProducts.map((product) => (
+                      <TableRow key={product.id || product._id}>
+                        <TableCell>{product.name}</TableCell>
+                        <TableCell>${product.price}</TableCell>
+                        <TableCell>{product.stock}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+                            color={product.stock > 0 ? 'success' : 'error'} 
+                            size="small" 
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small">
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton size="small" color="error">
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        ))}
       </Box>
     );
   };
@@ -902,15 +926,19 @@ const AdminDashboard = () => {
             onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
             sx={{ mb: 2 }}
           />
-          <TextField
-            margin="dense"
-            label="Category"
-            fullWidth
-            variant="outlined"
-            value={editForm.category}
-            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-            sx={{ mb: 2 }}
-          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={editForm.category}
+              onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+              label="Category"
+              required
+            >
+              <MenuItem value="laptop">💻 Laptop</MenuItem>
+              <MenuItem value="desktop">🖥️ Desktop</MenuItem>
+              <MenuItem value="accessories">🎧 Accessories</MenuItem>
+            </Select>
+          </FormControl>
           <TextField
             margin="dense"
             label="Stock"
