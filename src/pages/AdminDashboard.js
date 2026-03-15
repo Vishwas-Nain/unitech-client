@@ -53,7 +53,8 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Block as BlockIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { 
   getAdminDashboard, 
@@ -525,11 +526,14 @@ const AdminDashboard = () => {
       return <TableSkeleton rows={5} columns={6} />;
     }
     
+    console.log('=== PRODUCT DEBUGGING ===');
     console.log('Current products:', products);
+    console.log('Products length:', products.length);
     
     // Group products by category
     const groupedProducts = products.reduce((acc, product) => {
       const category = product.category || 'uncategorized';
+      console.log(`Processing product: ${product.name}, category: ${category}`);
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -538,22 +542,43 @@ const AdminDashboard = () => {
     }, {});
     
     console.log('Grouped products:', groupedProducts);
+    console.log('Available categories:', Object.keys(groupedProducts));
+    
+    // Check specifically for laptop category
+    if (groupedProducts['laptop']) {
+      console.log('Laptop products found:', groupedProducts['laptop']);
+    } else {
+      console.log('No laptop products found');
+    }
+    console.log('=== END DEBUGGING ===');
 
     return (
       <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6">Product Management</Typography>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />}
-            onClick={() => {
-              setDialogType('product');
-              setEditForm({ name: '', price: '', category: 'laptop', brand: '', stock: '', description: '' });
-              setDialogOpen(true);
-            }}
-          >
-            Add Product
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button 
+              variant="outlined" 
+              startIcon={<RefreshIcon />}
+              onClick={() => {
+                console.log('Manual refresh triggered');
+                fetchProducts();
+              }}
+            >
+              Refresh Products
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setDialogType('product');
+                setEditForm({ name: '', price: '', category: 'laptop', brand: '', stock: '', description: '' });
+                setDialogOpen(true);
+              }}
+            >
+              Add Product
+            </Button>
+          </Box>
         </Box>
         
         {/* Show all products table first */}
@@ -627,45 +652,99 @@ const AdminDashboard = () => {
                   sx={{ ml: 1 }}
                 />
               </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Product Name</TableCell>
-                      <TableCell>Brand</TableCell>
-                      <TableCell>Price</TableCell>
-                      <TableCell>Stock</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {categoryProducts.map((product) => (
-                      <TableRow key={product.id || product._id}>
-                        <TableCell>{product.name}</TableCell>
-                        <TableCell>{product.brand || 'N/A'}</TableCell>
-                        <TableCell>${product.price}</TableCell>
-                        <TableCell>{product.stock}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
-                            color={product.stock > 0 ? 'success' : 'error'} 
-                            size="small" 
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <IconButton size="small">
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton size="small" color="error">
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
+              {categoryProducts.length > 0 ? (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Product Name</TableCell>
+                        <TableCell>Brand</TableCell>
+                        <TableCell>Price</TableCell>
+                        <TableCell>Stock</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Actions</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {categoryProducts.map((product) => (
+                        <TableRow key={product.id || product._id}>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell>{product.brand || 'N/A'}</TableCell>
+                          <TableCell>${product.price}</TableCell>
+                          <TableCell>{product.stock}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+                              color={product.stock > 0 ? 'success' : 'error'} 
+                              size="small" 
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <IconButton size="small">
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton size="small" color="error">
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">
+                    No products found in {category} category.
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    sx={{ mt: 2 }}
+                    onClick={() => {
+                      setDialogType('product');
+                      setEditForm({ name: '', price: '', category: category, brand: '', stock: '', description: '' });
+                      setDialogOpen(true);
+                    }}
+                  >
+                    Add First {category === 'laptop' && '💻'} {category === 'desktop' && '🖥️'} {category === 'accessories' && '🎧'} {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </Button>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+        
+        {/* Show all categories even if empty */}
+        {['laptop', 'desktop', 'accessories'].filter(cat => !groupedProducts[cat]).map((category) => (
+          <Card key={category} sx={{ mb: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ textTransform: 'capitalize', flexGrow: 1 }}>
+                  {category === 'laptop' && '💻'} {category === 'desktop' && '🖥️'} {category === 'accessories' && '🎧'} {category} (0)
+                </Typography>
+                <Chip 
+                  label={0} 
+                  color="default" 
+                  size="small" 
+                  sx={{ ml: 1 }}
+                />
+              </Box>
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography color="text.secondary">
+                  No products found in {category} category.
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    setDialogType('product');
+                    setEditForm({ name: '', price: '', category: category, brand: '', stock: '', description: '' });
+                    setDialogOpen(true);
+                  }}
+                >
+                  Add First {category === 'laptop' && '💻'} {category === 'desktop' && '🖥️'} {category === 'accessories' && '🎧'} {category.charAt(0).toUpperCase() + category.slice(1)}
+                </Button>
+              </Box>
             </CardContent>
           </Card>
         ))}
