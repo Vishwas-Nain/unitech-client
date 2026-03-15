@@ -262,6 +262,9 @@ const AdminDashboard = () => {
       case 'products':
         if (products.length === 0) fetchProducts();
         break;
+      case 'categories':
+        if (products.length === 0) fetchProducts(); // Categories need products data
+        break;
       default:
         if (!dashboardData) fetchDashboardData();
     }
@@ -922,18 +925,211 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderCategories = () => (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Category Management
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Category management features coming soon...
-        </Typography>
-      </CardContent>
-    </Card>
-  );
+  const renderCategories = () => {
+    // Group products by category and calculate statistics
+    const categoryStats = products.reduce((acc, product) => {
+      const category = product.category || 'uncategorized';
+      if (!acc[category]) {
+        acc[category] = {
+          name: category,
+          count: 0,
+          totalValue: 0,
+          avgPrice: 0,
+          products: []
+        };
+      }
+      acc[category].count++;
+      acc[category].totalValue += parseFloat(product.price || 0);
+      acc[category].products.push(product);
+      return acc;
+    }, {});
+
+    // Calculate average price for each category
+    Object.keys(categoryStats).forEach(category => {
+      categoryStats[category].avgPrice = categoryStats[category].totalValue / categoryStats[category].count;
+    });
+
+    const categories = Object.values(categoryStats);
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Category Management</Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              console.log('Refreshing categories...');
+              fetchProducts();
+            }}
+          >
+            Refresh
+          </Button>
+        </Box>
+
+        {/* Category Statistics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          {categories.map((category) => (
+            <Grid item xs={12} sm={6} md={4} key={category.name}>
+              <Card sx={{ 
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 4
+                }
+              }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h4" sx={{ mr: 2, color: 'primary.main' }}>
+                      {category.name === 'laptop' && '💻'}
+                      {category.name === 'desktop' && '🖥️'}
+                      {category.name === 'accessories' && '🎧'}
+                      {category.name === 'uncategorized' && '📦'}
+                    </Typography>
+                    <Typography variant="h6" sx={{ textTransform: 'capitalize', flexGrow: 1 }}>
+                      {category.name}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Products
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                      {category.count}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Average Price
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      ₹{Math.round(category.avgPrice).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Value
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                      ₹{Math.round(category.totalValue).toLocaleString()}
+                    </Typography>
+                  </Box>
+
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
+                    fullWidth
+                    onClick={() => {
+                      console.log(`Viewing ${category.name} category products`);
+                      // You could navigate to products filtered by category
+                    }}
+                  >
+                    View Products
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Category Details Table */}
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Category Details
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Category</TableCell>
+                    <TableCell align="right">Products</TableCell>
+                    <TableCell align="right">Average Price</TableCell>
+                    <TableCell align="right">Total Value</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {categories.map((category) => (
+                    <TableRow key={category.name}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography sx={{ mr: 1, fontSize: '1.2rem' }}>
+                            {category.name === 'laptop' && '💻'}
+                            {category.name === 'desktop' && '🖥️'}
+                            {category.name === 'accessories' && '🎧'}
+                            {category.name === 'uncategorized' && '📦'}
+                          </Typography>
+                          <Typography sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}>
+                            {category.name}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Chip 
+                          label={category.count} 
+                          color="primary" 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        ₹{Math.round(category.avgPrice).toLocaleString()}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                          ₹{Math.round(category.totalValue).toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip 
+                          label={category.count > 0 ? 'Active' : 'Empty'} 
+                          color={category.count > 0 ? 'success' : 'default'} 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton size="small" sx={{ mr: 1 }}>
+                          <ViewIcon />
+                        </IconButton>
+                        <IconButton size="small" color="primary">
+                          <EditIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+
+        {/* Empty State */}
+        {categories.length === 0 && (
+          <Card>
+            <CardContent sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Categories Found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Add some products to see category statistics here.
+              </Typography>
+              <Button 
+                variant="contained" 
+                onClick={() => setSelectedSection('products')}
+              >
+                Add Products
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </Box>
+    );
+  };
 
   const renderAnalytics = () => (
     <Grid container spacing={3}>
