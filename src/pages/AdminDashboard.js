@@ -73,15 +73,16 @@ import {
 
 const drawerWidth = 240;
 
-// Skeleton Loading Components
+// Enhanced Skeleton Loading Components
 const DashboardSkeleton = () => (
   <Grid container spacing={3}>
     {[1, 2, 3, 4].map((item) => (
       <Grid item xs={12} sm={6} md={3} key={item}>
         <Card>
           <CardContent>
-            <Skeleton variant="text" width="40%" />
-            <Skeleton variant="rectangular" height={60} sx={{ my: 1 }} />
+            <Skeleton variant="text" width="40%" sx={{ mb: 2 }} />
+            <Skeleton variant="rectangular" height={60} sx={{ mb: 1 }} />
+            <Skeleton variant="text" width="60%" />
           </CardContent>
         </Card>
       </Grid>
@@ -125,6 +126,10 @@ const DashboardSkeleton = () => (
 const TableSkeleton = ({ rows = 5, columns = 6 }) => (
   <Card>
     <CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Skeleton variant="text" width="30%" sx={{ mr: 2 }} />
+        <Skeleton variant="rectangular" width={100} height={32} />
+      </Box>
       <TableContainer>
         <Table>
           <TableHead>
@@ -153,6 +158,35 @@ const TableSkeleton = ({ rows = 5, columns = 6 }) => (
   </Card>
 );
 
+// Loading overlay component
+const LoadingOverlay = () => (
+  <Box
+    sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      backdropFilter: 'blur(2px)',
+    }}
+  >
+    <Box sx={{ textAlign: 'center' }}>
+      <CircularProgress size={60} thickness={4} sx={{ mb: 2 }} />
+      <Typography variant="h6" color="textSecondary">
+        Loading Dashboard...
+      </Typography>
+      <Typography variant="body2" color="textSecondary">
+        Please wait while we fetch your data
+      </Typography>
+    </Box>
+  </Box>
+);
+
 const AdminDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('dashboard');
@@ -161,6 +195,7 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [minimumLoading, setMinimumLoading] = useState(true); // Minimum loading time for better UX
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('');
   const [editForm, setEditForm] = useState({});
@@ -180,48 +215,68 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setMinimumLoading(true);
       const response = await getAdminDashboard();
       if (response.success) {
         setDashboardData(response);
+      } else {
+        console.error('Dashboard API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
-      setLoading(false);
+      // Minimum loading time for better UX
+      setTimeout(() => {
+        setLoading(false);
+        setMinimumLoading(false);
+      }, 800);
     }
   };
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setMinimumLoading(true);
       const response = await getAdminUsers();
       if (response.success) {
         setUsers(response.users);
+      } else {
+        console.error('Users API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        setMinimumLoading(false);
+      }, 600);
     }
   };
 
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      setMinimumLoading(true);
       const response = await getAdminOrders();
       if (response.success) {
         setOrders(response.orders || []);
+      } else {
+        console.error('Orders API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        setMinimumLoading(false);
+      }, 600);
     }
   };
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      setMinimumLoading(true);
       console.log('Fetching products...');
       const response = await getAdminProducts();
       console.log('Products API response:', response);
@@ -234,7 +289,10 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        setMinimumLoading(false);
+      }, 800);
     }
   };
 
@@ -429,7 +487,7 @@ const AdminDashboard = () => {
   );
 
   const renderDashboard = () => {
-    if (loading && !dashboardData) {
+    if (minimumLoading && !dashboardData) {
       return <DashboardSkeleton />;
     }
     
@@ -531,8 +589,8 @@ const AdminDashboard = () => {
   };
 
   const renderProducts = () => {
-    if (loading && products.length === 0) {
-      return <TableSkeleton rows={5} columns={6} />;
+    if (minimumLoading && products.length === 0) {
+      return <TableSkeleton rows={10} columns={6} />;
     }
     
     console.log('=== PRODUCT DEBUGGING ===');
@@ -819,8 +877,8 @@ const AdminDashboard = () => {
   );
 
   const renderUsers = () => {
-    if (loading && users.length === 0) {
-      return <TableSkeleton rows={5} columns={6} />;
+    if (minimumLoading && users.length === 0) {
+      return <TableSkeleton rows={8} columns={6} />;
     }
     
     return (
@@ -1570,7 +1628,7 @@ const AdminDashboard = () => {
       >
         <Toolbar />
         <Container maxWidth="xl">
-          {renderContent()}
+          {minimumLoading ? <LoadingOverlay /> : renderContent()}
         </Container>
       </Box>
 
