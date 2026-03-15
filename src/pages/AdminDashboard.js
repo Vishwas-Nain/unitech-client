@@ -221,9 +221,14 @@ const AdminDashboard = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      console.log('Fetching products...');
       const response = await getAdminProducts();
+      console.log('Products API response:', response);
       if (response.success) {
+        console.log('Setting products:', response.products || []);
         setProducts(response.products || []);
+      } else {
+        console.error('Products API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -264,13 +269,19 @@ const AdminDashboard = () => {
   const handleCreateProduct = async () => {
     try {
       const response = await createAdminProduct(editForm);
+      console.log('Create product response:', response);
       if (response.success) {
         setDialogOpen(false);
+        // Show success message
+        alert('Product created successfully!');
         // Refresh products to show the new product in its category
         fetchProducts();
+      } else {
+        alert(response.error || 'Failed to create product');
       }
     } catch (error) {
       console.error('Failed to create product:', error);
+      alert('Failed to create product. Please try again.');
     }
   };
 
@@ -514,6 +525,8 @@ const AdminDashboard = () => {
       return <TableSkeleton rows={5} columns={6} />;
     }
     
+    console.log('Current products:', products);
+    
     // Group products by category
     const groupedProducts = products.reduce((acc, product) => {
       const category = product.category || 'uncategorized';
@@ -523,6 +536,8 @@ const AdminDashboard = () => {
       acc[category].push(product);
       return acc;
     }, {});
+    
+    console.log('Grouped products:', groupedProducts);
 
     return (
       <Box>
@@ -540,6 +555,62 @@ const AdminDashboard = () => {
             Add Product
           </Button>
         </Box>
+        
+        {/* Show all products table first */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              All Products ({products.length})
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Product Name</TableCell>
+                    <TableCell>Brand</TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Price</TableCell>
+                    <TableCell>Stock</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id || product._id}>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.brand || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={product.category || 'N/A'} 
+                          color="primary" 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell>${product.price}</TableCell>
+                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={product.stock > 0 ? 'In Stock' : 'Out of Stock'} 
+                          color={product.stock > 0 ? 'success' : 'error'} 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <IconButton size="small">
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton size="small" color="error">
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
         
         {/* Category Sections */}
         {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
