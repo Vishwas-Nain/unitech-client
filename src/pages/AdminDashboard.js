@@ -265,6 +265,12 @@ const AdminDashboard = () => {
       case 'categories':
         if (products.length === 0) fetchProducts(); // Categories need products data
         break;
+      case 'analytics':
+        // Analytics need all data
+        if (products.length === 0) fetchProducts();
+        if (users.length === 0) fetchUsers();
+        if (orders.length === 0) fetchOrders();
+        break;
       default:
         if (!dashboardData) fetchDashboardData();
     }
@@ -1131,34 +1137,352 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderAnalytics = () => (
-    <Grid container spacing={3}>
-      <Grid item xs={12} md={8}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Sales Analytics
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Analytics charts and graphs coming soon...
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} md={4}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Top Selling Products
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Product analytics coming soon...
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  );
+  const renderAnalytics = () => {
+    // Calculate analytics data from existing data
+    const analyticsData = {
+      totalProducts: products.length,
+      totalUsers: users.length,
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0),
+      
+      // Category breakdown
+      categoryBreakdown: products.reduce((acc, product) => {
+        const category = product.category || 'uncategorized';
+        acc[category] = (acc[category] || 0) + 1;
+        return acc;
+      }, {}),
+      
+      // Brand breakdown
+      brandBreakdown: products.reduce((acc, product) => {
+        const brand = product.brand || 'unknown';
+        acc[brand] = (acc[brand] || 0) + 1;
+        return acc;
+      }, {}),
+      
+      // Price ranges
+      priceRanges: {
+        'Under ₹10,000': products.filter(p => p.price < 10000).length,
+        '₹10,000 - ₹25,000': products.filter(p => p.price >= 10000 && p.price < 25000).length,
+        '₹25,000 - ₹50,000': products.filter(p => p.price >= 25000 && p.price < 50000).length,
+        'Over ₹50,000': products.filter(p => p.price >= 50000).length
+      },
+      
+      // Order status breakdown
+      orderStatusBreakdown: orders.reduce((acc, order) => {
+        const status = order.status || 'pending';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {}),
+      
+      // Recent activity
+      recentProducts: products.slice(0, 5),
+      recentUsers: users.slice(0, 5),
+      recentOrders: orders.slice(0, 5)
+    };
+
+    // Calculate percentages for visual representation
+    const maxCategoryCount = Math.max(...Object.values(analyticsData.categoryBreakdown), 1);
+    const maxBrandCount = Math.max(...Object.values(analyticsData.brandBreakdown), 1);
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h6">Analytics Dashboard</Typography>
+          <Button 
+            variant="contained" 
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              console.log('Refreshing analytics...');
+              fetchProducts();
+              fetchUsers();
+              fetchOrders();
+            }}
+          >
+            Refresh Data
+          </Button>
+        </Box>
+
+        {/* Key Metrics Cards */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {analyticsData.totalProducts}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Total Products
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  Across {Object.keys(analyticsData.categoryBreakdown).length} categories
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {analyticsData.totalUsers}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Total Users
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  Registered customers
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {analyticsData.totalOrders}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Total Orders
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  All time orders
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  ₹{analyticsData.totalRevenue.toLocaleString()}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Total Revenue
+                </Typography>
+                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  From all orders
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Grid container spacing={3}>
+          {/* Category Distribution */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📊 Category Distribution
+                </Typography>
+                {Object.entries(analyticsData.categoryBreakdown).map(([category, count]) => (
+                  <Box key={category} sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                        {category}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {count} products
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      width: '100%', 
+                      height: 8, 
+                      backgroundColor: 'grey.200', 
+                      borderRadius: 4,
+                      overflow: 'hidden'
+                    }}>
+                      <Box sx={{
+                        width: `${(count / maxCategoryCount) * 100}%`,
+                        height: '100%',
+                        backgroundColor: 'primary.main',
+                        borderRadius: 4,
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </Box>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Brand Distribution */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🏷️ Brand Distribution
+                </Typography>
+                {Object.entries(analyticsData.brandBreakdown)
+                  .sort(([,a], [,b]) => b - a)
+                  .slice(0, 5)
+                  .map(([brand, count]) => (
+                  <Box key={brand} sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">
+                        {brand}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {count} products
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      width: '100%', 
+                      height: 8, 
+                      backgroundColor: 'grey.200', 
+                      borderRadius: 4,
+                      overflow: 'hidden'
+                    }}>
+                      <Box sx={{
+                        width: `${(count / maxBrandCount) * 100}%`,
+                        height: '100%',
+                        backgroundColor: 'secondary.main',
+                        borderRadius: 4,
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </Box>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Price Range Analysis */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  💰 Price Range Analysis
+                </Typography>
+                {Object.entries(analyticsData.priceRanges).map(([range, count]) => (
+                  <Box key={range} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2">
+                      {range}
+                    </Typography>
+                    <Chip 
+                      label={count} 
+                      color={count > 0 ? 'primary' : 'default'} 
+                      size="small" 
+                    />
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Order Status Analysis */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  📦 Order Status Analysis
+                </Typography>
+                {Object.entries(analyticsData.orderStatusBreakdown).map(([status, count]) => (
+                  <Box key={status} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                      {status}
+                    </Typography>
+                    <Chip 
+                      label={count} 
+                      color={
+                        status === 'delivered' ? 'success' :
+                        status === 'shipped' ? 'info' :
+                        status === 'processing' ? 'warning' :
+                        status === 'cancelled' ? 'error' : 'default'
+                      } 
+                      size="small" 
+                    />
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Recent Activity */}
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  🕒 Recent Activity
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Recent Products
+                    </Typography>
+                    {analyticsData.recentProducts.map(product => (
+                      <Box key={product.id} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          {product.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {product.brand} • ₹{product.price}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Grid>
+                  
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Recent Users
+                    </Typography>
+                    {analyticsData.recentUsers.map(user => (
+                      <Box key={user.id} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          {user.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {user.email}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Grid>
+                  
+                  <Grid item xs={12} md={4}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Recent Orders
+                    </Typography>
+                    {analyticsData.recentOrders.map(order => (
+                      <Box key={order._id} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Order #{order._id?.slice(-8)}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          ₹{order.totalAmount} • {order.status}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Empty State */}
+        {analyticsData.totalProducts === 0 && (
+          <Card>
+            <CardContent sx={{ textAlign: 'center', py: 8 }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Analytics Data Available
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Add some products, users, and orders to see analytics here.
+              </Typography>
+              <Button 
+                variant="contained" 
+                onClick={() => setSelectedSection('products')}
+              >
+                Add Products
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </Box>
+    );
+  };
 
   const renderContent = () => {
     switch (selectedSection) {
