@@ -85,11 +85,21 @@ const Checkout = () => {
     setError('');
 
     try {
-      const result = await checkout();
+      const shippingAddress = {
+        street: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        phone: formData.phone,
+        email: formData.email,
+        fullName: formData.fullName
+      };
+
+      const result = await checkout(shippingAddress, formData.paymentMethod);
       if (result.success) {
-        navigate('/checkout-success');
+        navigate('/checkout/success');
       } else {
-        setError('Checkout failed. Please try again.');
+        setError(result.message || 'Checkout failed. Please try again.');
       }
     } catch (err) {
       setError(err.message || 'An error occurred during checkout');

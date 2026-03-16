@@ -150,19 +150,38 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('cartItems');
   };
 
-  const checkout = async () => {
+  const checkout = async (shippingAddress, paymentMethod) => {
     if (cartItems.length === 0) {
       return Promise.reject(new Error('Cart is empty'));
     }
 
-    // Here you would typically make an API call to process the order
-    // For now, we'll simulate the process
-    return new Promise((resolve) => {
-      setTimeout(() => {
+    const token = getToken();
+    if (!token) {
+      return Promise.reject(new Error('Please login to checkout'));
+    }
+
+    try {
+      const response = await api.post('/api/orders', {
+        shippingAddress,
+        paymentMethod
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        // Clear cart after successful order
         clearCart();
-        resolve({ success: true, message: 'Checkout successful!' });
-      }, 1000);
-    });
+        return { success: true, message: 'Order placed successfully!' };
+      } else {
+        return { success: false, message: response.data.message || 'Checkout failed' };
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to place order' 
+      };
+    }
   };
 
   const updateTotalPrice = () => {
