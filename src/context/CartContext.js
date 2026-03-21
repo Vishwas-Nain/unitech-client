@@ -197,8 +197,8 @@ export const CartProvider = ({ children }) => {
       setCartItems(JSON.parse(savedCart));
     }
     
-    // If logged-in, sync cart from server but don't overwrite if local cart exists
-    const syncFromServer = async () => {
+    // If logged-in, sync cart with server
+    const syncCart = async () => {
       const token = getToken();
       if (!token) {
         // Clear cart if no token (user logged out)
@@ -208,7 +208,9 @@ export const CartProvider = ({ children }) => {
       }
       
       try {
+        // Get server cart first
         const res = await api.get('/api/cart', { headers: { Authorization: `Bearer ${token}` } });
+        
         if (res?.data?.cart?.items) {
           const serverItems = res.data.cart.items.map(i => ({
             id: i.product_id, // Use product_id for client-side operations
@@ -217,14 +219,13 @@ export const CartProvider = ({ children }) => {
             quantity: i.quantity
           }));
           
-          // Only sync from server if local cart is empty (fresh login)
-          const localCart = localStorage.getItem('cartItems');
-          if (!localCart || JSON.parse(localCart).length === 0) {
-            setCartItems(serverItems);
-          }
+          setCartItems(serverItems);
+          console.log('✅ Cart loaded from server:', { itemsCount: serverItems.length });
+        } else {
+          console.log('🛒 No cart on server, using local cart');
         }
       } catch (err) {
-        console.warn('Could not load server cart on mount', err);
+        console.warn('Could not sync cart with server', err);
         // If auth error, clear cart
         if (err.response?.status === 401) {
           setCartItems([]);
@@ -232,9 +233,9 @@ export const CartProvider = ({ children }) => {
         }
       }
     };
-
-    syncFromServer();
-  }, []);
+    
+    syncCart();
+  }, []); // Empty dependency array means this runs only once on mount to localStorage
 
   useEffect(() => {
     // Save cart to localStorage
