@@ -13,9 +13,18 @@ const api = axios.create({
   }
 });
 
-// Request interceptor to log all requests
+// Request interceptor to add auth token and log requests
 api.interceptors.request.use(
   (config) => {
+    // Add auth token to all requests
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Added auth token to request');
+    } else {
+      console.log('⚠️ No auth token found in localStorage');
+    }
+
     console.log('Request:', config.method.toUpperCase(), config.url);
     if (config.data) {
       console.log('Request data:', config.data);
@@ -50,6 +59,17 @@ api.interceptors.response.use(
         data: error.response.data,
         headers: error.response.headers,
       });
+
+      // Handle 401 Unauthorized - clear auth and redirect to login
+      if (error.response.status === 401) {
+        console.log('🚫 401 Unauthorized - clearing auth data');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Redirect to login page
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+      }
     } else if (error.request) {
       // The request was made but no response was received
       console.error('No response received:', {
