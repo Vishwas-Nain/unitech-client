@@ -255,16 +255,25 @@ const AdminDashboard = () => {
 
   const fetchOrders = async () => {
     try {
+      console.log('🔄 Fetching admin orders...');
       setLoading(true);
       setMinimumLoading(true);
       const response = await getAdminOrders();
+      console.log('📦 Orders API response:', response);
+      
       if (response.success) {
+        console.log('✅ Orders fetched successfully:', {
+          count: response.orders?.length || 0,
+          sampleOrder: response.orders?.[0]
+        });
         setOrders(response.orders || []);
       } else {
-        console.error('Orders API error:', response.error);
+        console.error('❌ Orders API error:', response.error);
+        setOrders([]);
       }
     } catch (error) {
-      console.error('Failed to fetch orders:', error);
+      console.error('❌ Failed to fetch orders:', error);
+      setOrders([]);
     } finally {
       setTimeout(() => {
         setLoading(false);
@@ -819,62 +828,137 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderOrders = () => (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Order Management
-        </Typography>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Order ID</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id || order._id}>
-                  <TableCell>{(order.id || order._id).slice(-8)}</TableCell>
-                  <TableCell>{order.user_name || order.user?.name || 'N/A'}</TableCell>
-                  <TableCell>{order.user_email || order.user?.email || 'N/A'}</TableCell>
-                  <TableCell>
-                    <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <Select
-                        value={order.status || 'pending'}
-                        onChange={(e) => handleUpdateOrderStatus(order.id || order._id, e.target.value)}
-                      >
-                        <MenuItem value="pending">Pending</MenuItem>
-                        <MenuItem value="processing">Processing</MenuItem>
-                        <MenuItem value="shipped">Shipped</MenuItem>
-                        <MenuItem value="delivered">Delivered</MenuItem>
-                        <MenuItem value="cancelled">Cancelled</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                  <TableCell>${order.totalAmount || order.total || 0}</TableCell>
-                  <TableCell>
-                    {new Date(order.created_at || order.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton size="small">
-                      <ViewIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
-    </Card>
-  );
+  const renderOrders = () => {
+    console.log('🔄 Rendering orders section:', {
+      ordersCount: orders.length,
+      isLoading: loading,
+      orders: orders.slice(0, 2) // Log first 2 orders for debugging
+    });
+
+    if (loading && minimumLoading) {
+      return (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Order Management
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (!orders || orders.length === 0) {
+      return (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Order Management
+            </Typography>
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <Typography variant="body1" color="text.secondary">
+                No orders found
+              </Typography>
+              <Button 
+                variant="contained" 
+                onClick={fetchOrders}
+                sx={{ mt: 2 }}
+              >
+                Refresh Orders
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    try {
+      return (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Order Management
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Order ID</TableCell>
+                    <TableCell>Customer</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {orders.map((order, index) => {
+                    console.log(`📦 Rendering order ${index}:`, order);
+                    return (
+                      <TableRow key={order.id || order._id || index}>
+                        <TableCell>{(order.id || order._id || 'N/A').toString().slice(-8)}</TableCell>
+                        <TableCell>{order.user_name || order.user?.name || 'N/A'}</TableCell>
+                        <TableCell>{order.user_email || order.user?.email || 'N/A'}</TableCell>
+                        <TableCell>
+                          <FormControl size="small" sx={{ minWidth: 120 }}>
+                            <Select
+                              value={order.status || 'pending'}
+                              onChange={(e) => handleUpdateOrderStatus(order.id || order._id, e.target.value)}
+                            >
+                              <MenuItem value="pending">Pending</MenuItem>
+                              <MenuItem value="processing">Processing</MenuItem>
+                              <MenuItem value="shipped">Shipped</MenuItem>
+                              <MenuItem value="delivered">Delivered</MenuItem>
+                              <MenuItem value="cancelled">Cancelled</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+                        <TableCell>${order.totalAmount || order.total || 0}</TableCell>
+                        <TableCell>
+                          {new Date(order.created_at || order.createdAt || Date.now()).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <IconButton size="small">
+                            <ViewIcon />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </Card>
+      );
+    } catch (error) {
+      console.error('❌ Error rendering orders:', error);
+      return (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Order Management
+            </Typography>
+            <Box sx={{ textAlign: 'center', p: 4 }}>
+              <Typography variant="body1" color="error">
+                Error loading orders: {error.message}
+              </Typography>
+              <Button 
+                variant="contained" 
+                onClick={fetchOrders}
+                sx={{ mt: 2 }}
+              >
+                Try Again
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      );
+    }
+  };
 
   const renderUsers = () => {
     if (minimumLoading && users.length === 0) {
