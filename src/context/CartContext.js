@@ -161,11 +161,28 @@ export const CartProvider = ({ children }) => {
     }
 
     try {
-      const response = await api.post('/api/orders', {
+      const orderData = {
         shippingAddress,
         paymentMethod
-      }, {
+      };
+
+      console.log('🛒 Sending order request:', {
+        url: '/api/orders',
+        hasToken: !!token,
+        orderData,
+        cartItemsCount: cartItems.length,
+        totalPrice
+      });
+
+      const response = await api.post('/api/orders', orderData, {
         headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('✅ Order response received:', {
+        status: response.status,
+        success: response.data.success,
+        message: response.data.message,
+        order: response.data.order ? 'Order data received' : 'No order data'
       });
 
       if (response.data.success) {
@@ -176,10 +193,38 @@ export const CartProvider = ({ children }) => {
         return { success: false, message: response.data.message || 'Checkout failed' };
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      console.error('❌ Checkout error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers
+        }
+      });
+      
+      // More specific error messages
+      let errorMessage = 'Failed to place order';
+      
+      if (error.code === 'ECONNABORTED' || error.code === 'ERR_CONNECTION_CLOSED') {
+        errorMessage = 'Connection to server was lost. Please try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Session expired. Please login again.';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || 'Invalid order data';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (!error.response) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Failed to place order' 
+        message: error.response?.data?.message || errorMessage
       };
     }
   };
