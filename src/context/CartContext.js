@@ -214,9 +214,12 @@ export const CartProvider = ({ children }) => {
         if (res?.data?.cart?.items) {
           const serverItems = res.data.cart.items.map(i => ({
             id: i.product_id, // Use product_id for client-side operations
-            title: i.name || i.product?.name || i.product?.title || '',
+            name: i.name || i.product_name || '', // Use name from backend
+            title: i.name || i.product_name || '', // Keep title for compatibility
             price: i.price,
-            quantity: i.quantity
+            quantity: i.quantity,
+            image: i.images && i.images.length > 0 ? i.images[0] : '/images/placeholder.jpg', // Use first image
+            images: i.images || [] // Keep full images array
           }));
           
           setCartItems(serverItems);

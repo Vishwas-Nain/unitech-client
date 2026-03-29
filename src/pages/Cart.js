@@ -95,14 +95,14 @@ const Cart = () => {
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
                       <img
-                        src={item.image}
-                        alt={item.name}
-                        style={{ width: '100%', height: 'auto' }}
+                        src={item.image || '/images/placeholder.jpg'}
+                        alt={item.name || item.title || 'Product'}
+                        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
                       />
                     </Grid>
                     <Grid item xs={12} sm={8}>
                       <Typography variant="h6" gutterBottom>
-                        {item.name}
+                        {item.name || item.title || 'Product'}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
                         Price: {formatPrice(item.price)}
