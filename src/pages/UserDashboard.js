@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -99,48 +99,118 @@ const OverviewSkeleton = () => (
   </Grid>
 );
 
+// Data cache for user dashboard
+const userDataCache = {
+  profile: null,
+  orders: null,
+  timestamps: {
+    profile: 0,
+    orders: 0
+  }
+};
+
+// Cache duration in milliseconds (5 minutes)
+const USER_CACHE_DURATION = 5 * 60 * 1000;
+
+// Check if cache is valid
+const isUserCacheValid = (timestamp) => Date.now() - timestamp < USER_CACHE_DURATION;
+
 const UserDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('overview');
   const [userProfile, setUserProfile] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editForm, setEditForm] = useState({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
+  // Optimized data fetching with caching
+  const fetchUserData = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🔄 Fetching user dashboard data...');
       
-      // Make parallel API calls instead of sequential
-      const [profileResponse, ordersResponse] = await Promise.all([
-        getUserProfile(),
-        getUserOrders()
-      ]);
+      // Check cache first
+      const profileValid = userDataCache.profile && isUserCacheValid(userDataCache.timestamps.profile);
+      const ordersValid = userDataCache.orders && isUserCacheValid(userDataCache.timestamps.orders);
       
-      if (profileResponse.success) {
-        setUserProfile(profileResponse.user);
+      let profileResponse, ordersResponse;
+      
+      if (profileValid && ordersValid) {
+        console.log('📋 Using cached user data');
+        setUserProfile(userDataCache.profile);
+        setOrders(userDataCache.orders);
         setEditForm({
-          name: profileResponse.user.name,
-          email: profileResponse.user.email,
-          mobile: profileResponse.user.mobile
+          name: userDataCache.profile.name,
+          email: userDataCache.profile.email,
+          mobile: userDataCache.profile.mobile
         });
-      }
-
-      if (ordersResponse.success) {
-        setOrders(ordersResponse.orders || []);
+      } else {
+        // Make parallel API calls for better performance
+        const promises = [];
+        
+        if (!profileValid) {
+          promises.push(getUserProfile());
+        } else {
+          setUserProfile(userDataCache.profile);
+          setEditForm({
+            name: userDataCache.profile.name,
+            email: userDataCache.profile.email,
+            mobile: userDataCache.profile.mobile
+          });
+        }
+        
+        if (!ordersValid) {
+          promises.push(getUserOrders());
+        } else {
+          setOrders(userDataCache.orders);
+        }
+        
+        if (promises.length > 0) {
+          const responses = await Promise.all(promises);
+          
+          // Process responses based on what was fetched
+          let responseIndex = 0;
+          
+          if (!profileValid) {
+            profileResponse = responses[responseIndex++];
+            if (profileResponse.success) {
+              userDataCache.profile = profileResponse.user;
+              userDataCache.timestamps.profile = Date.now();
+              setUserProfile(profileResponse.user);
+              setEditForm({
+                name: profileResponse.user.name,
+                email: profileResponse.user.email,
+                mobile: profileResponse.user.mobile
+              });
+              console.log('✅ User profile cached');
+            }
+          }
+          
+          if (!ordersValid) {
+            ordersResponse = responses[responseIndex];
+            if (ordersResponse.success) {
+              userDataCache.orders = ordersResponse.orders || [];
+              userDataCache.timestamps.orders = Date.now();
+              setOrders(ordersResponse.orders || []);
+              console.log('✅ User orders cached');
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
     } finally {
       setLoading(false);
+      setInitialLoad(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);

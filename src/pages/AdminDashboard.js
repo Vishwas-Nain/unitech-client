@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -187,6 +187,26 @@ const LoadingOverlay = () => (
   </Box>
 );
 
+// Data cache for performance optimization
+const dataCache = {
+  dashboard: null,
+  users: null,
+  orders: null,
+  products: null,
+  timestamps: {
+    dashboard: 0,
+    users: 0,
+    orders: 0,
+    products: 0
+  }
+};
+
+// Cache duration in milliseconds (5 minutes)
+const CACHE_DURATION = 5 * 60 * 1000;
+
+// Check if cache is valid
+const isCacheValid = (timestamp) => Date.now() - timestamp < CACHE_DURATION;
+
 const AdminDashboard = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState('dashboard');
@@ -194,8 +214,8 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [minimumLoading, setMinimumLoading] = useState(true); // Minimum loading time for better UX
+  const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('');
   const [editForm, setEditForm] = useState({});
@@ -209,55 +229,82 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Load initial dashboard data only
     fetchDashboardData();
   }, [navigate]);
 
-  const fetchDashboardData = async () => {
+  // Optimized data fetching with caching
+  const fetchDashboardData = useCallback(async () => {
+    // Check cache first
+    if (dataCache.dashboard && isCacheValid(dataCache.timestamps.dashboard)) {
+      console.log('📋 Using cached dashboard data');
+      setDashboardData(dataCache.dashboard);
+      setInitialLoad(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      setMinimumLoading(true);
+      console.log('🔄 Fetching fresh dashboard data...');
       const response = await getAdminDashboard();
+      
       if (response.success) {
+        // Cache the data
+        dataCache.dashboard = response;
+        dataCache.timestamps.dashboard = Date.now();
         setDashboardData(response);
+        console.log('✅ Dashboard data cached');
       } else {
         console.error('Dashboard API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
-      // Minimum loading time for better UX
-      setTimeout(() => {
-        setLoading(false);
-        setMinimumLoading(false);
-      }, 800);
+      setLoading(false);
+      setInitialLoad(false);
     }
-  };
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
+    // Check cache first
+    if (dataCache.users && isCacheValid(dataCache.timestamps.users)) {
+      console.log('👥 Using cached users data');
+      setUsers(dataCache.users);
+      return;
+    }
+
     try {
       setLoading(true);
-      setMinimumLoading(true);
+      console.log('🔄 Fetching fresh users data...');
       const response = await getAdminUsers();
+      
       if (response.success) {
+        // Cache the data
+        dataCache.users = response.users;
+        dataCache.timestamps.users = Date.now();
         setUsers(response.users);
+        console.log('✅ Users data cached');
       } else {
         console.error('Users API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setMinimumLoading(false);
-      }, 600);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
+    // Check cache first
+    if (dataCache.orders && isCacheValid(dataCache.timestamps.orders)) {
+      console.log('📦 Using cached orders data');
+      setOrders(dataCache.orders);
+      return;
+    }
+
     try {
       console.log('🔄 Fetching admin orders...');
       setLoading(true);
-      setMinimumLoading(true);
       const response = await getAdminOrders();
       console.log('📦 Orders API response:', response);
       
@@ -266,7 +313,12 @@ const AdminDashboard = () => {
           count: response.orders?.length || 0,
           sampleOrder: response.orders?.[0]
         });
-        setOrders(response.orders || []);
+        
+        // Cache the data
+        dataCache.orders = response.orders;
+        dataCache.timestamps.orders = Date.now();
+        setOrders(response.orders);
+        console.log('✅ Orders data cached');
       } else {
         console.error('❌ Orders API error:', response.error);
         setOrders([]);
@@ -275,72 +327,79 @@ const AdminDashboard = () => {
       console.error('❌ Failed to fetch orders:', error);
       setOrders([]);
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setMinimumLoading(false);
-      }, 600);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    // Check cache first
+    if (dataCache.products && isCacheValid(dataCache.timestamps.products)) {
+      console.log('🛍️ Using cached products data');
+      setProducts(dataCache.products);
+      return;
+    }
+
     try {
       setLoading(true);
-      setMinimumLoading(true);
-      console.log('Fetching products...');
+      console.log('🔄 Fetching fresh products data...');
       const response = await getAdminProducts();
-      console.log('Products API response:', response);
+      
       if (response.success) {
-        console.log('Setting products:', response.products || []);
-        setProducts(response.products || []);
+        // Cache the data
+        dataCache.products = response.products;
+        dataCache.timestamps.products = Date.now();
+        setProducts(response.products);
+        console.log('✅ Products data cached');
       } else {
         console.error('Products API error:', response.error);
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
-      setTimeout(() => {
-        setLoading(false);
-        setMinimumLoading(false);
-      }, 800);
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  // Clear cache function
+  const clearCache = useCallback(() => {
+    console.log('🗑️ Clearing all caches...');
+    Object.keys(dataCache).forEach(key => {
+      if (key !== 'timestamps') {
+        dataCache[key] = null;
+      }
+    });
+    Object.keys(dataCache.timestamps).forEach(key => {
+      dataCache.timestamps[key] = 0;
+    });
+  }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-
-  const handleSectionChange = (section) => {
+  // Optimized section change handler with lazy loading
+  const handleSectionChange = useCallback((section) => {
     setSelectedSection(section);
     
     // Only fetch data when needed (lazy loading)
     switch (section) {
       case 'users':
-        if (users.length === 0) fetchUsers();
+        fetchUsers();
         break;
       case 'orders':
-        if (orders.length === 0) fetchOrders();
+        fetchOrders();
         break;
       case 'products':
-        if (products.length === 0) fetchProducts();
+        fetchProducts();
         break;
-      case 'categories':
-        if (products.length === 0) fetchProducts(); // Categories need products data
-        break;
-      case 'analytics':
-        // Analytics need all data
-        if (products.length === 0) fetchProducts();
-        if (users.length === 0) fetchUsers();
-        if (orders.length === 0) fetchOrders();
+      case 'dashboard':
+        fetchDashboardData();
         break;
       default:
-        if (!dashboardData) fetchDashboardData();
+        break;
     }
+  }, [fetchUsers, fetchOrders, fetchProducts, fetchDashboardData]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   const handleCreateProduct = async () => {
@@ -828,14 +887,15 @@ const AdminDashboard = () => {
     );
   };
 
-  const renderOrders = () => {
+  // Memoized orders rendering for performance
+  const renderOrders = useMemo(() => {
     console.log('🔄 Rendering orders section:', {
       ordersCount: orders.length,
       isLoading: loading,
       orders: orders.slice(0, 2) // Log first 2 orders for debugging
     });
 
-    if (loading && minimumLoading) {
+    if (loading) {
       return (
         <Card>
           <CardContent>
@@ -958,7 +1018,7 @@ const AdminDashboard = () => {
         </Card>
       );
     }
-  };
+  }, [orders, loading, fetchOrders, handleUpdateOrderStatus]);
 
   const renderUsers = () => {
     if (minimumLoading && users.length === 0) {
