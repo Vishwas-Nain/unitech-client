@@ -561,10 +561,10 @@ const AdminDashboard = () => {
                   </TableHead>
                   <TableBody>
                     {dashboardData?.recentOrders?.map((order) => (
-                      <TableRow key={order._id}>
-                        <TableCell>{order._id.slice(-8)}</TableCell>
-                        <TableCell>{order.user?.name || 'N/A'}</TableCell>
-                        <TableCell>{order.user?.email || 'N/A'}</TableCell>
+                      <TableRow key={order.id || order._id}>
+                        <TableCell>{(order.id || order._id).slice(-8)}</TableCell>
+                        <TableCell>{order.user_name || order.user?.name || 'N/A'}</TableCell>
+                        <TableCell>{order.user_email || order.user?.email || 'N/A'}</TableCell>
                         <TableCell>
                           <Chip 
                             label={order.status || 'Pending'} 
@@ -572,9 +572,9 @@ const AdminDashboard = () => {
                             size="small" 
                           />
                         </TableCell>
-                        <TableCell>${order.totalAmount || 0}</TableCell>
+                        <TableCell>${order.totalAmount || order.total || 0}</TableCell>
                         <TableCell>
-                          {new Date(order.createdAt).toLocaleDateString()}
+                          {new Date(order.created_at || order.createdAt).toLocaleDateString()}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -840,15 +840,15 @@ const AdminDashboard = () => {
             </TableHead>
             <TableBody>
               {orders.map((order) => (
-                <TableRow key={order._id}>
-                  <TableCell>{order._id.slice(-8)}</TableCell>
-                  <TableCell>{order.user?.name || 'N/A'}</TableCell>
-                  <TableCell>{order.user?.email || 'N/A'}</TableCell>
+                <TableRow key={order.id || order._id}>
+                  <TableCell>{(order.id || order._id).slice(-8)}</TableCell>
+                  <TableCell>{order.user_name || order.user?.name || 'N/A'}</TableCell>
+                  <TableCell>{order.user_email || order.user?.email || 'N/A'}</TableCell>
                   <TableCell>
                     <FormControl size="small" sx={{ minWidth: 120 }}>
                       <Select
                         value={order.status || 'pending'}
-                        onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                        onChange={(e) => handleUpdateOrderStatus(order.id || order._id, e.target.value)}
                       >
                         <MenuItem value="pending">Pending</MenuItem>
                         <MenuItem value="processing">Processing</MenuItem>
@@ -858,9 +858,9 @@ const AdminDashboard = () => {
                       </Select>
                     </FormControl>
                   </TableCell>
-                  <TableCell>${order.totalAmount || 0}</TableCell>
+                  <TableCell>${order.totalAmount || order.total || 0}</TableCell>
                   <TableCell>
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {new Date(order.created_at || order.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <IconButton size="small">
@@ -1503,12 +1503,12 @@ const AdminDashboard = () => {
                       Recent Orders
                     </Typography>
                     {analyticsData.recentOrders.map(order => (
-                      <Box key={order._id} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                      <Box key={order.id || order._id} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
                         <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                          Order #{order._id?.slice(-8)}
+                          Order #{(order.id || order._id)?.slice(-8)}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          ₹{order.totalAmount} • {order.status}
+                          ₹{order.totalAmount || order.total} • {order.status}
                         </Typography>
                       </Box>
                     ))}
