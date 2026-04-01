@@ -89,7 +89,6 @@ api.interceptors.response.use(
 );
 
 export default api;
-
 export async function registerUser(data) {
   try {
     console.log('Attempting to register user with data:', data);
