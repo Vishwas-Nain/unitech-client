@@ -220,6 +220,14 @@ const AdminDashboard = () => {
   const [dialogType, setDialogType] = useState('');
   const [editForm, setEditForm] = useState({});
   const navigate = useNavigate();
+  
+  // Minimum loading state for better UX
+  const minimumLoading = loading && initialLoad;
+  
+  // Handle drawer toggle for mobile
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
 
   useEffect(() => {
     // Check if user is admin
