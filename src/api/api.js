@@ -443,3 +443,132 @@ export const toggleUserStatus = async (userId) => {
     };
   }
 };
+
+// Order Management APIs
+export const trackOrder = async (orderId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.get(`/api/orders/${orderId}/track`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to track order.' 
+    };
+  }
+};
+
+export const cancelOrder = async (orderId, reason) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post(`/api/orders/${orderId}/cancel`, { reason }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to cancel order.' 
+    };
+  }
+};
+
+export const requestReturn = async (orderId, reason, returnItems) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post(`/api/orders/${orderId}/return`, { reason, returnItems }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to request return.' 
+    };
+  }
+};
+
+// Payment Integration APIs
+export const createPaymentOrder = async (amount, currency = 'INR') => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/payment/create-order', { amount, currency }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to create payment order.' 
+    };
+  }
+};
+
+export const verifyPayment = async (paymentData) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/payment/verify', paymentData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to verify payment.' 
+    };
+  }
+};
+
+export const handleFailedPayment = async (orderId, paymentId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/payment/failed', { orderId, paymentId }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to handle failed payment.' 
+    };
+  }
+};
+
+// Notification APIs
+export const sendOrderNotification = async (orderId, type, message) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await api.post('/api/notifications/order', { orderId, type, message }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    return { 
+      error: error.response?.data?.message || 
+             error.message || 
+             'Failed to send notification.' 
+    };
+  }
+};
