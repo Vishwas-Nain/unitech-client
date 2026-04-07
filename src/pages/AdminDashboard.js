@@ -895,9 +895,8 @@ const AdminDashboard = () => {
     );
   };
 
-  // Memoized orders rendering for performance
-  const renderOrders = useMemo(() => {
-    console.log('🔄 Rendering orders section:', {
+  const renderOrders = () => {
+    console.log('Rendering orders section:', {
       ordersCount: orders.length,
       isLoading: loading,
       orders: orders.slice(0, 2) // Log first 2 orders for debugging
@@ -964,7 +963,7 @@ const AdminDashboard = () => {
                 </TableHead>
                 <TableBody>
                   {orders.map((order, index) => {
-                    console.log(`📦 Rendering order ${index}:`, order);
+                    console.log(`Rendering order ${index}:`, order);
                     return (
                       <TableRow key={order.id || order._id || index}>
                         <TableCell>{(order.id || order._id || 'N/A').toString().slice(-8)}</TableCell>
@@ -1003,7 +1002,7 @@ const AdminDashboard = () => {
         </Card>
       );
     } catch (error) {
-      console.error('❌ Error rendering orders:', error);
+      console.error('Error rendering orders:', error);
       return (
         <Card>
           <CardContent>
@@ -1026,7 +1025,7 @@ const AdminDashboard = () => {
         </Card>
       );
     }
-  }, [orders, loading, fetchOrders, handleUpdateOrderStatus]);
+  };
 
   const renderUsers = () => {
     if (minimumLoading && users.length === 0) {
