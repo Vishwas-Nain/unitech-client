@@ -228,13 +228,28 @@ const Orders = () => {
         // Mock tracking data
         setTrackingData({
           currentStatus: order.status,
-          estimatedDelivery: new Date(Date.now() + 5 * 86400000).toISOString(),
+          estimatedDelivery: order.estimatedDelivery || new Date(Date.now() + 5 * 86400000).toISOString(),
           trackingHistory: [
-            { status: 'ORDER_PLACED', timestamp: order.date, description: 'Order placed successfully' },
-            { status: 'PROCESSING', timestamp: new Date(Date.now() - 4 * 86400000).toISOString(), description: 'Order is being processed' },
-            { status: 'SHIPPED', timestamp: new Date(Date.now() - 2 * 86400000).toISOString(), description: 'Order has been shipped' },
-            { status: 'OUT_FOR_DELIVERY', timestamp: new Date(Date.now() - 1 * 86400000).toISOString(), description: 'Out for delivery' },
-            { status: order.status, timestamp: order.deliveryDate || new Date().toISOString(), description: 'Delivered' }
+            { 
+              status: 'ORDER_PLACED', 
+              timestamp: order.date, 
+              description: 'Order placed successfully' 
+            },
+            { 
+              status: 'PROCESSING', 
+              timestamp: new Date(new Date(order.date).getTime() + 12 * 3600000).toISOString(), 
+              description: 'Order is being processed' 
+            },
+            { 
+              status: 'SHIPPED', 
+              timestamp: new Date(new Date(order.date).getTime() + 24 * 3600000).toISOString(), 
+              description: 'Order has been shipped' 
+            },
+            { 
+              status: order.status === 'DELIVERED' ? 'DELIVERED' : 'OUT_FOR_DELIVERY', 
+              timestamp: order.deliveryDate || new Date(new Date(order.date).getTime() + 48 * 3600000).toISOString(), 
+              description: order.status === 'DELIVERED' ? 'Delivered successfully' : 'Out for delivery' 
+            }
           ]
         });
       }

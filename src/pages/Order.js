@@ -52,48 +52,122 @@ const Order = () => {
         // In production, this would be: const response = await api.get(`/api/orders/${id}`);
         
         // Mock order data that matches the structure from Orders.js
-        const mockOrder = {
-          id: id,
-          orderNumber: id,
-          status: 'PROCESSING',
-          paymentStatus: 'PAID',
-          paymentMethod: 'ONLINE',
-          createdAt: new Date().toISOString(),
-          total: 103997,
-          subtotal: 101998,
-          shipping: 1999,
-          tax: 0,
-          items: [
-            {
-              _id: '1',
-              product: {
-                name: 'Gaming Laptop',
-                image: '/images/products/laptop.jpg'
+        // Use different mock data based on order ID to simulate different orders
+        let mockOrder;
+        
+        if (id === 'ORD123456') {
+          mockOrder = {
+            id: id,
+            orderNumber: id,
+            status: 'DELIVERED',
+            paymentStatus: 'PAID',
+            paymentMethod: 'ONLINE',
+            createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+            total: 103997,
+            subtotal: 101998,
+            shipping: 1999,
+            tax: 0,
+            items: [
+              {
+                _id: '1',
+                product: {
+                  name: 'Gaming Laptop',
+                  image: '/images/products/laptop.jpg'
+                },
+                price: 99999,
+                quantity: 1
               },
-              price: 99999,
-              quantity: 1
+              {
+                _id: '2', 
+                product: {
+                  name: 'Wireless Mouse',
+                  image: '/images/products/mouse.jpg'
+                },
+                price: 1999,
+                quantity: 2
+              }
+            ],
+            shippingAddress: {
+              fullName: 'John Doe',
+              address: '123 Main Street',
+              city: 'Mumbai',
+              state: 'Maharashtra',
+              pincode: '400001',
+              phone: '9876543210'
             },
-            {
-              _id: '2', 
-              product: {
-                name: 'Wireless Mouse',
-                image: '/images/products/mouse.jpg'
-              },
-              price: 1999,
-              quantity: 2
-            }
-          ],
-          shippingAddress: {
-            fullName: 'John Doe',
-            address: '123 Main Street',
-            city: 'Mumbai',
-            state: 'Maharashtra',
-            pincode: '400001',
-            phone: '9876543210'
-          },
-          trackingNumber: 'TRK123456789',
-          estimatedDelivery: new Date(Date.now() + 5 * 86400000).toISOString()
-        };
+            trackingNumber: 'TRK123456789',
+            estimatedDelivery: new Date(Date.now() - 1 * 86400000).toISOString()
+          };
+        } else if (id === 'ORD789012') {
+          mockOrder = {
+            id: id,
+            orderNumber: id,
+            status: 'PROCESSING',
+            paymentStatus: 'PAID',
+            paymentMethod: 'COD',
+            createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+            total: 2999,
+            subtotal: 2999,
+            shipping: 0,
+            tax: 0,
+            items: [
+              {
+                _id: '3',
+                product: {
+                  name: 'Wireless Keyboard',
+                  image: '/images/products/keyboard.jpg'
+                },
+                price: 2999,
+                quantity: 1
+              }
+            ],
+            shippingAddress: {
+              fullName: 'Jane Smith',
+              address: '456 Park Avenue',
+              city: 'Delhi',
+              state: 'Delhi',
+              pincode: '110001',
+              phone: '9876543211'
+            },
+            trackingNumber: 'TRK789012345',
+            estimatedDelivery: new Date(Date.now() + 3 * 86400000).toISOString()
+          };
+        } else {
+          // Default mock order for any other ID
+          mockOrder = {
+            id: id,
+            orderNumber: id,
+            status: 'SHIPPED',
+            paymentStatus: 'PAID',
+            paymentMethod: 'ONLINE',
+            createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+            total: 5999,
+            subtotal: 5799,
+            shipping: 200,
+            tax: 0,
+            items: [
+              {
+                _id: '4',
+                product: {
+                  name: 'USB-C Hub',
+                  image: '/images/products/hub.jpg'
+                },
+                price: 5799,
+                quantity: 1
+              }
+            ],
+            shippingAddress: {
+              fullName: 'Alex Johnson',
+              address: '789 Tech Street',
+              city: 'Bangalore',
+              state: 'Karnataka',
+              pincode: '560001',
+              phone: '9876543212'
+            },
+            trackingNumber: 'TRK555666777',
+            estimatedDelivery: new Date(Date.now() + 2 * 86400000).toISOString()
+          };
+        }
         
         setOrder(mockOrder);
       } catch (err) {
