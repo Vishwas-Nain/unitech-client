@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Grid,
@@ -12,48 +12,34 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  IconButton,
   Chip,
   CircularProgress,
   Alert,
   useTheme,
-  Card,
-  CardContent,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Stepper,
-  Step,
-  StepLabel,
-  StepContent,
+  TextField
+} from '@mui/material';
+import {
   Timeline,
   TimelineItem,
   TimelineSeparator,
   TimelineConnector,
   TimelineContent,
-  TimelineDot,
-  Badge
-} from '@mui/material';
+  TimelineDot
+} from '@mui/lab';
 import {
   Receipt as ReceiptIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
-  ArrowBack as ArrowBackIcon,
-  ShoppingCart as ShoppingCartIcon,
   LocalShipping as LocalShippingIcon,
   Cancel as CancelIcon,
   Refresh as RefreshIcon,
   Timeline as TimelineIcon,
-  Payment as PaymentIcon,
-  Notifications as NotificationsIcon
+  Payment as PaymentIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice } from '../utils/currency';
@@ -64,7 +50,6 @@ import {
   cancelOrder, 
   requestReturn,
   createPaymentOrder,
-  verifyPayment,
   handleFailedPayment
 } from '../api/api';
 import PaymentIntegration from '../components/PaymentIntegration';
@@ -100,53 +85,54 @@ const Orders = () => {
   const [paymentIntegrationOpen, setPaymentIntegrationOpen] = useState(false);
 
   // Fetch orders from API
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getUserOrders();
+      if (response.success) {
+        setOrders(response.orders || []);
+      } else {
+        // Fallback to mock data if API fails
+        const mockOrders = [
+          {
+            id: 'ORD' + Math.floor(Math.random() * 1000000),
+            date: new Date().toISOString(),
+            status: 'DELIVERED',
+            items: [
+              { id: 1, name: 'Gaming Laptop', quantity: 1, price: 99999, image: '/images/products/laptop.jpg' },
+              { id: 2, name: 'Wireless Mouse', quantity: 2, price: 1999, image: '/images/products/mouse.jpg' }
+            ],
+            total: 103997,
+            shippingAddress: {
+              fullName: 'John Doe',
+              address: '123 Main Street',
+              city: 'Mumbai',
+              state: 'Maharashtra',
+              pincode: '400001',
+              phone: '9876543210'
+            },
+            paymentMethod: 'COD',
+            paymentStatus: 'PAID',
+            trackingNumber: 'TRK' + Math.floor(Math.random() * 1000000),
+            deliveryDate: new Date(Date.now() - 3 * 86400000).toISOString()
+          }
+        ];
+        setOrders(mockOrders);
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to load orders. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch orders from API
   useEffect(() => {
     if (!isLoggedIn) {
       navigate('/login', { state: { from: '/orders' } });
       return;
     }
-
-    const fetchOrders = async () => {
-      setLoading(true);
-      try {
-        const response = await getUserOrders();
-        if (response.success) {
-          setOrders(response.orders || []);
-        } else {
-          // Fallback to mock data if API fails
-          const mockOrders = [
-            {
-              id: 'ORD' + Math.floor(Math.random() * 1000000),
-              date: new Date().toISOString(),
-              status: 'DELIVERED',
-              items: [
-                { id: 1, name: 'Gaming Laptop', quantity: 1, price: 99999, image: '/images/products/laptop.jpg' },
-                { id: 2, name: 'Wireless Mouse', quantity: 2, price: 1999, image: '/images/products/mouse.jpg' }
-              ],
-              total: 103997,
-              shippingAddress: {
-                fullName: 'John Doe',
-                address: '123 Main Street',
-                city: 'Mumbai',
-                state: 'Maharashtra',
-                pincode: '400001',
-                phone: '9876543210'
-              },
-              paymentMethod: 'COD',
-              paymentStatus: 'PAID',
-              trackingNumber: 'TRK' + Math.floor(Math.random() * 1000000),
-              deliveryDate: new Date(Date.now() - 3 * 86400000).toISOString()
-            }
-          ];
-          setOrders(mockOrders);
-        }
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        setError('Failed to load orders. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
 
     // Check if we have orders in localStorage first
     const savedOrders = localStorage.getItem('userOrders');
@@ -162,7 +148,7 @@ const Orders = () => {
       // Clear any pending timeouts
       clearTimeout();
     };
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, navigate, fetchOrders]);
 
   const getStatusColor = (status) => {
     return orderStatus[status]?.color || theme.palette.primary.main;
@@ -327,16 +313,6 @@ const Orders = () => {
     } finally {
       setPaymentLoading(false);
     }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   if (loading) {
