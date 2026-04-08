@@ -92,17 +92,41 @@ const Orders = () => {
       if (response.success) {
         setOrders(response.orders || []);
       } else {
-        // Fallback to mock data if API fails
+        // Mock order data that matches the structure in Order.js
         const mockOrders = [
           {
-            id: 'ORD' + Math.floor(Math.random() * 1000000),
+            id: 'ORD123456',
+            orderNumber: 'ORD123456',
             date: new Date().toISOString(),
             status: 'DELIVERED',
+            paymentStatus: 'PAID',
+            paymentMethod: 'ONLINE',
             items: [
-              { id: 1, name: 'Gaming Laptop', quantity: 1, price: 99999, image: '/images/products/laptop.jpg' },
-              { id: 2, name: 'Wireless Mouse', quantity: 2, price: 1999, image: '/images/products/mouse.jpg' }
+              { 
+                _id: '1', 
+                product: {
+                  name: 'Gaming Laptop', 
+                  image: '/images/products/laptop.jpg'
+                },
+                quantity: 1, 
+                price: 99999, 
+                image: '/images/products/laptop.jpg' 
+              },
+              { 
+                _id: '2', 
+                product: {
+                  name: 'Wireless Mouse', 
+                  image: '/images/products/mouse.jpg'
+                },
+                quantity: 2, 
+                price: 1999, 
+                image: '/images/products/mouse.jpg' 
+              }
             ],
             total: 103997,
+            subtotal: 101998,
+            shipping: 1999,
+            tax: 0,
             shippingAddress: {
               fullName: 'John Doe',
               address: '123 Main Street',
@@ -111,10 +135,41 @@ const Orders = () => {
               pincode: '400001',
               phone: '9876543210'
             },
-            paymentMethod: 'COD',
-            paymentStatus: 'PAID',
-            trackingNumber: 'TRK' + Math.floor(Math.random() * 1000000),
+            trackingNumber: 'TRK123456789',
             deliveryDate: new Date(Date.now() - 3 * 86400000).toISOString()
+          },
+          {
+            id: 'ORD789012',
+            orderNumber: 'ORD789012',
+            date: new Date(Date.now() - 2 * 86400000).toISOString(),
+            status: 'PROCESSING',
+            paymentStatus: 'PAID',
+            paymentMethod: 'COD',
+            items: [
+              { 
+                _id: '3', 
+                product: {
+                  name: 'Wireless Keyboard', 
+                  image: '/images/products/keyboard.jpg'
+                },
+                quantity: 1, 
+                price: 2999, 
+                image: '/images/products/keyboard.jpg' 
+              }
+            ],
+            total: 2999,
+            subtotal: 2999,
+            shipping: 0,
+            tax: 0,
+            shippingAddress: {
+              fullName: 'Jane Smith',
+              address: '456 Park Avenue',
+              city: 'Delhi',
+              state: 'Delhi',
+              pincode: '110001',
+              phone: '9876543211'
+            },
+            trackingNumber: 'TRK789012345'
           }
         ];
         setOrders(mockOrders);
@@ -383,8 +438,8 @@ const Orders = () => {
                   </TableHead>
                   <TableBody>
                     {order.items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.name}</TableCell>
+                      <TableRow key={item._id || index}>
+                        <TableCell>{(item.product?.name || item.name || 'N/A')}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell align="right">{formatPrice(item.price)}</TableCell>
                       </TableRow>
