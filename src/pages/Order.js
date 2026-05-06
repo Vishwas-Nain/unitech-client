@@ -141,7 +141,7 @@ const Order = () => {
                 />
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Order Date: {formatDate(order.createdAt)}
+                Order Date: {formatDate(order.created_at || order.createdAt)}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 Payment Method: {order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Online Payment'}
@@ -168,7 +168,7 @@ const Order = () => {
               </Typography>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2">Subtotal:</Typography>
-                <Typography variant="body2">{formatPrice(order.subtotal || order.total)}</Typography>
+                <Typography variant="body2">{formatPrice(order.subtotal || (order.total || order.totalAmount) * 0.8475)}</Typography>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2">Shipping:</Typography>
@@ -176,13 +176,13 @@ const Order = () => {
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2">Tax:</Typography>
-                <Typography variant="body2">{formatPrice(order.tax || 0)}</Typography>
+                <Typography variant="body2">{formatPrice(order.tax || ((order.total || order.totalAmount) * 0.18 / 1.18))}</Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6">Total:</Typography>
                 <Typography variant="h6" color="primary">
-                  {formatPrice(order.total)}
+                  {formatPrice(order.total || order.totalAmount)}
                 </Typography>
               </Box>
             </CardContent>
