@@ -109,7 +109,7 @@ const Orders = () => {
                   image: '/images/products/laptop.jpg'
                 },
                 quantity: 1, 
-                price: 99999, 
+                price: 96760, 
                 image: '/images/products/laptop.jpg' 
               },
               { 
@@ -123,9 +123,9 @@ const Orders = () => {
                 image: '/images/products/mouse.jpg' 
               }
             ],
-            total: 103997,
-            subtotal: 101998,
-            shipping: 1999,
+            total: 100758, // 96760 + (1999 * 2)
+            subtotal: 100758,
+            shipping: 0,
             tax: 0,
             shippingAddress: {
               fullName: 'John Doe',
@@ -214,48 +214,41 @@ const Orders = () => {
   };
 
   const handleViewOrder = (orderId) => {
-    navigate(`/order/${orderId}`);
+    navigate(`/orders/${orderId}`);
   };
 
   const handleTrackOrder = async (order) => {
     setSelectedOrder(order);
     setTrackingDialog(true);
-    try {
-      const response = await trackOrder(order.id);
-      if (response.success) {
-        setTrackingData(response.tracking);
-      } else {
-        // Mock tracking data
-        setTrackingData({
-          currentStatus: order.status,
-          estimatedDelivery: order.estimatedDelivery || new Date(Date.now() + 5 * 86400000).toISOString(),
-          trackingHistory: [
-            { 
-              status: 'ORDER_PLACED', 
-              timestamp: order.date, 
-              description: 'Order placed successfully' 
-            },
-            { 
-              status: 'PROCESSING', 
-              timestamp: new Date(new Date(order.date).getTime() + 12 * 3600000).toISOString(), 
-              description: 'Order is being processed' 
-            },
-            { 
-              status: 'SHIPPED', 
-              timestamp: new Date(new Date(order.date).getTime() + 24 * 3600000).toISOString(), 
-              description: 'Order has been shipped' 
-            },
-            { 
-              status: order.status === 'DELIVERED' ? 'DELIVERED' : 'OUT_FOR_DELIVERY', 
-              timestamp: order.deliveryDate || new Date(new Date(order.date).getTime() + 48 * 3600000).toISOString(), 
-              description: order.status === 'DELIVERED' ? 'Delivered successfully' : 'Out for delivery' 
-            }
-          ]
-        });
-      }
-    } catch (error) {
-      console.error('Error tracking order:', error);
-    }
+    
+    // Use mock tracking data directly since API doesn't exist
+    const orderDate = new Date(order.date);
+    setTrackingData({
+      currentStatus: order.status,
+      estimatedDelivery: order.estimatedDelivery || new Date(Date.now() + 5 * 86400000).toISOString(),
+      trackingHistory: [
+        { 
+          status: 'ORDER_PLACED', 
+          timestamp: order.date, 
+          description: 'Order placed successfully' 
+        },
+        { 
+          status: 'PROCESSING', 
+          timestamp: new Date(orderDate.getTime() + 12 * 3600000).toISOString(), 
+          description: 'Order is being processed' 
+        },
+        { 
+          status: 'SHIPPED', 
+          timestamp: new Date(orderDate.getTime() + 24 * 3600000).toISOString(), 
+          description: 'Order has been shipped' 
+        },
+        { 
+          status: order.status === 'DELIVERED' ? 'DELIVERED' : 'OUT_FOR_DELIVERY', 
+          timestamp: order.deliveryDate || new Date(orderDate.getTime() + 48 * 3600000).toISOString(), 
+          description: order.status === 'DELIVERED' ? 'Delivered successfully' : 'Out for delivery' 
+        }
+      ]
+    });
   };
 
   const handleCancelOrder = async () => {

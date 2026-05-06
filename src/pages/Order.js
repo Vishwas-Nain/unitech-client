@@ -63,9 +63,9 @@ const Order = () => {
             paymentStatus: 'PAID',
             paymentMethod: 'ONLINE',
             createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-            total: 103997,
-            subtotal: 101998,
-            shipping: 1999,
+            total: 100758, // 96760 + (1999 * 2)
+            subtotal: 100758,
+            shipping: 0,
             tax: 0,
             items: [
               {
@@ -74,7 +74,7 @@ const Order = () => {
                   name: 'Gaming Laptop',
                   image: '/images/products/laptop.jpg'
                 },
-                price: 99999,
+                price: 96760,
                 quantity: 1
               },
               {
@@ -182,6 +182,7 @@ const Order = () => {
   }, [id]);
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
