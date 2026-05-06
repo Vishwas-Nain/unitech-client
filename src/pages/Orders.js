@@ -92,91 +92,14 @@ const Orders = () => {
       if (response.success) {
         setOrders(response.orders || []);
       } else {
-        // Mock order data that matches the structure in Order.js
-        const mockOrders = [
-          {
-            id: 'ORD123456',
-            orderNumber: 'ORD123456',
-            date: new Date().toISOString(),
-            status: 'DELIVERED',
-            paymentStatus: 'PAID',
-            paymentMethod: 'ONLINE',
-            items: [
-              { 
-                _id: '1', 
-                product: {
-                  name: 'Gaming Laptop', 
-                  image: '/images/products/laptop.jpg'
-                },
-                quantity: 1, 
-                price: 96760, 
-                image: '/images/products/laptop.jpg' 
-              },
-              { 
-                _id: '2', 
-                product: {
-                  name: 'Wireless Mouse', 
-                  image: '/images/products/mouse.jpg'
-                },
-                quantity: 2, 
-                price: 1999, 
-                image: '/images/products/mouse.jpg' 
-              }
-            ],
-            total: 100758, // 96760 + (1999 * 2)
-            subtotal: 100758,
-            shipping: 0,
-            tax: 0,
-            shippingAddress: {
-              fullName: 'John Doe',
-              address: '123 Main Street',
-              city: 'Mumbai',
-              state: 'Maharashtra',
-              pincode: '400001',
-              phone: '9876543210'
-            },
-            trackingNumber: 'TRK123456789',
-            deliveryDate: new Date(Date.now() - 3 * 86400000).toISOString()
-          },
-          {
-            id: 'ORD789012',
-            orderNumber: 'ORD789012',
-            date: new Date(Date.now() - 2 * 86400000).toISOString(),
-            status: 'PROCESSING',
-            paymentStatus: 'PAID',
-            paymentMethod: 'COD',
-            items: [
-              { 
-                _id: '3', 
-                product: {
-                  name: 'Wireless Keyboard', 
-                  image: '/images/products/keyboard.jpg'
-                },
-                quantity: 1, 
-                price: 2999, 
-                image: '/images/products/keyboard.jpg' 
-              }
-            ],
-            total: 2999,
-            subtotal: 2999,
-            shipping: 0,
-            tax: 0,
-            shippingAddress: {
-              fullName: 'Jane Smith',
-              address: '456 Park Avenue',
-              city: 'Delhi',
-              state: 'Delhi',
-              pincode: '110001',
-              phone: '9876543211'
-            },
-            trackingNumber: 'TRK789012345'
-          }
-        ];
-        setOrders(mockOrders);
+        // Handle API error but don't fall back to mock data
+        console.error('Failed to fetch orders:', response.error);
+        setOrders([]);
       }
     } catch (err) {
       console.error('Error fetching orders:', err);
       setError('Failed to load orders. Please try again later.');
+      setOrders([]);
     } finally {
       setLoading(false);
     }

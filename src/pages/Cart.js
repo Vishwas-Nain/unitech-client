@@ -95,7 +95,13 @@ const Cart = () => {
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
                       <img
-                        src={item.image || item.images?.[0] || '/images/placeholder.jpg'}
+                        src={
+                          item.images?.[0] || 
+                          item.image || 
+                          item.thumbnail || 
+                          item.productImage || 
+                          '/images/placeholder.jpg'
+                        }
                         alt={item.name || item.title || 'Product'}
                         style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
                         onError={(e) => {

@@ -27,6 +27,7 @@ import {
   Info as InfoIcon
 } from '@mui/icons-material';
 import { formatPrice } from '../utils/currency';
+import api from '../api/api';
 
 const orderStatus = {
   PENDING: { color: '#F57C00', icon: <InfoIcon />, label: 'Pending' },
@@ -48,131 +49,18 @@ const Order = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        // For now, use mock data since API might not be implemented
-        // In production, this would be: const response = await api.get(`/api/orders/${id}`);
+        // Fetch real order data from API
+        const response = await api.get(`/api/orders/${id}`);
         
-        // Mock order data that matches the structure from Orders.js
-        // Use different mock data based on order ID to simulate different orders
-        let mockOrder;
-        
-        if (id === 'ORD123456') {
-          mockOrder = {
-            id: id,
-            orderNumber: id,
-            status: 'DELIVERED',
-            paymentStatus: 'PAID',
-            paymentMethod: 'ONLINE',
-            createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-            total: 100758, // 96760 + (1999 * 2)
-            subtotal: 100758,
-            shipping: 0,
-            tax: 0,
-            items: [
-              {
-                _id: '1',
-                product: {
-                  name: 'Gaming Laptop',
-                  image: '/images/products/laptop.jpg'
-                },
-                price: 96760,
-                quantity: 1
-              },
-              {
-                _id: '2', 
-                product: {
-                  name: 'Wireless Mouse',
-                  image: '/images/products/mouse.jpg'
-                },
-                price: 1999,
-                quantity: 2
-              }
-            ],
-            shippingAddress: {
-              fullName: 'John Doe',
-              address: '123 Main Street',
-              city: 'Mumbai',
-              state: 'Maharashtra',
-              pincode: '400001',
-              phone: '9876543210'
-            },
-            trackingNumber: 'TRK123456789',
-            estimatedDelivery: new Date(Date.now() - 1 * 86400000).toISOString()
-          };
-        } else if (id === 'ORD789012') {
-          mockOrder = {
-            id: id,
-            orderNumber: id,
-            status: 'PROCESSING',
-            paymentStatus: 'PAID',
-            paymentMethod: 'COD',
-            createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-            total: 2999,
-            subtotal: 2999,
-            shipping: 0,
-            tax: 0,
-            items: [
-              {
-                _id: '3',
-                product: {
-                  name: 'Wireless Keyboard',
-                  image: '/images/products/keyboard.jpg'
-                },
-                price: 2999,
-                quantity: 1
-              }
-            ],
-            shippingAddress: {
-              fullName: 'Jane Smith',
-              address: '456 Park Avenue',
-              city: 'Delhi',
-              state: 'Delhi',
-              pincode: '110001',
-              phone: '9876543211'
-            },
-            trackingNumber: 'TRK789012345',
-            estimatedDelivery: new Date(Date.now() + 3 * 86400000).toISOString()
-          };
+        if (response.data && response.data.success) {
+          setOrder(response.data.order);
         } else {
-          // Default mock order for any other ID
-          mockOrder = {
-            id: id,
-            orderNumber: id,
-            status: 'SHIPPED',
-            paymentStatus: 'PAID',
-            paymentMethod: 'ONLINE',
-            createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-            total: 5999,
-            subtotal: 5799,
-            shipping: 200,
-            tax: 0,
-            items: [
-              {
-                _id: '4',
-                product: {
-                  name: 'USB-C Hub',
-                  image: '/images/products/hub.jpg'
-                },
-                price: 5799,
-                quantity: 1
-              }
-            ],
-            shippingAddress: {
-              fullName: 'Alex Johnson',
-              address: '789 Tech Street',
-              city: 'Bangalore',
-              state: 'Karnataka',
-              pincode: '560001',
-              phone: '9876543212'
-            },
-            trackingNumber: 'TRK555666777',
-            estimatedDelivery: new Date(Date.now() + 2 * 86400000).toISOString()
-          };
+          // Handle API error
+          setError('Order not found or failed to load');
         }
-        
-        setOrder(mockOrder);
       } catch (err) {
-        setError('Failed to fetch order details. Please try again later.');
         console.error('Error fetching order:', err);
+        setError('Failed to fetch order details. Please try again later.');
       } finally {
         setLoading(false);
       }
