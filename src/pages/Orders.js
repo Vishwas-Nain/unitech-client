@@ -112,14 +112,8 @@ const Orders = () => {
       return;
     }
 
-    // Check if we have orders in localStorage first
-    const savedOrders = localStorage.getItem('userOrders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-      setLoading(false);
-    } else {
-      fetchOrders();
-    }
+    // Always fetch fresh orders from database
+    fetchOrders();
     
     // Cleanup function
     return () => {
