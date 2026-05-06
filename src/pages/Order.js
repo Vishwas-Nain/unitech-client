@@ -208,9 +208,19 @@ const Order = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <img
-                        src={item.product?.image || item.image}
+                        src={item.product?.image || item.image || '/placeholder-product.jpg'}
                         alt={item.product?.name || item.name}
-                        style={{ width: 50, height: 50, objectFit: 'cover', marginRight: 16 }}
+                        style={{ 
+                          width: 50, 
+                          height: 50, 
+                          objectFit: 'cover', 
+                          marginRight: 16,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '4px'
+                        }}
+                        onError={(e) => {
+                          e.target.src = '/placeholder-product.jpg';
+                        }}
                       />
                       <Typography>{item.product?.name || item.name}</Typography>
                     </Box>
