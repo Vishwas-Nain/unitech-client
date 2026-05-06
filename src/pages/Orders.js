@@ -139,14 +139,14 @@ const Orders = () => {
     setTrackingDialog(true);
     
     // Use mock tracking data directly since API doesn't exist
-    const orderDate = new Date(order.date);
+    const orderDate = new Date(order.created_at || order.date);
     setTrackingData({
       currentStatus: order.status,
       estimatedDelivery: order.estimatedDelivery || new Date(Date.now() + 5 * 86400000).toISOString(),
       trackingHistory: [
         { 
           status: 'ORDER_PLACED', 
-          timestamp: order.date, 
+          timestamp: order.created_at || order.date, 
           description: 'Order placed successfully' 
         },
         { 
@@ -349,7 +349,7 @@ const Orders = () => {
               </Box>
 
               <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-                {new Date(order.date).toLocaleDateString()}
+                {new Date(order.created_at || order.date).toLocaleDateString()}
               </Typography>
 
               <TableContainer>
@@ -364,7 +364,7 @@ const Orders = () => {
                   <TableBody>
                     {order.items.map((item, index) => (
                       <TableRow key={item._id || index}>
-                        <TableCell>{(item.product?.name || item.name || 'N/A')}</TableCell>
+                        <TableCell>{(item.product?.name || item.name || `Product #${item.product_id}` || 'N/A')}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell align="right">{formatPrice(item.price)}</TableCell>
                       </TableRow>
@@ -374,7 +374,7 @@ const Orders = () => {
                         <Typography variant="h6">Total:</Typography>
                       </TableCell>
                       <TableCell align="right">
-                        <Typography variant="h6">{formatPrice(order.total)}</Typography>
+                        <Typography variant="h6">{formatPrice(order.total || order.totalAmount)}</Typography>
                       </TableCell>
                     </TableRow>
                   </TableBody>
