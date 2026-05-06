@@ -80,6 +80,65 @@ const Order = () => {
     });
   };
 
+  const handlePrintInvoice = () => {
+    // Create print-specific styles
+    const printStyles = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-invoice, .print-invoice * {
+          visibility: visible;
+        }
+        .print-invoice {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          padding: 20px;
+        }
+        .no-print {
+          display: none !important;
+        }
+        @page {
+          margin: 1cm;
+          size: A4;
+        }
+      }
+    `;
+    
+    // Add styles to head
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = printStyles;
+    document.head.appendChild(styleSheet);
+    
+    // Add print class to main container
+    const mainContainer = document.querySelector('main, #root > div > div');
+    if (mainContainer) {
+      mainContainer.classList.add('print-invoice');
+    }
+    
+    // Hide action buttons
+    const actionButtons = document.querySelector('[data-print="hide"]');
+    if (actionButtons) {
+      actionButtons.style.display = 'none';
+    }
+    
+    // Print and cleanup
+    window.print();
+    
+    // Cleanup after print
+    setTimeout(() => {
+      document.head.removeChild(styleSheet);
+      if (mainContainer) {
+        mainContainer.classList.remove('print-invoice');
+      }
+      if (actionButtons) {
+        actionButtons.style.display = '';
+      }
+    }, 100);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -113,7 +172,7 @@ const Order = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 4 }} className="print-invoice">
       <Typography variant="h4" gutterBottom>
         Order #{order.orderNumber || order.id}
       </Typography>
@@ -259,7 +318,7 @@ const Order = () => {
       )}
 
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }} data-print="hide">
         <Button
           variant="outlined"
           onClick={() => navigate('/orders')}
@@ -277,7 +336,7 @@ const Order = () => {
           </Button>
           <Button
             variant="contained"
-            onClick={() => window.print()}
+            onClick={handlePrintInvoice}
           >
             Print Invoice
           </Button>
